@@ -1,1 +1,237 @@
-/home/simonvic/.local/bin/DayZClientLauncher
+#!/bin/bash
+
+CLIENT_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZ_x64.exe"
+DIAG_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"
+
+# ARGUMENTS FOR DAYZ EXE
+NAME=""
+SERVER_ADDRESS=""
+SERVER_PORT=""
+SERVER_PASSWORD=""
+PROFILE_DIR=""
+MISSION=""
+WORLD=""
+MODS=""
+
+########################################################
+
+verbosity=0
+launchExe="$CLIENT_EXE"
+launchArguments=""
+
+function useFilePatching() {
+	#grep server config
+	useDiagnostic
+	addLaunchArguments "-filePatching"
+}
+
+function useDiagnostic() {
+	launchExe=$DIAG_EXE
+}
+
+function addMod() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$MODS" ]; then
+			MODS="$MODS;$1"
+		else
+			MODS="$1"
+		fi
+	fi
+}
+
+function addLaunchArguments() {
+	if [ ! -z "$1" ]; then
+		launchArguments="$launchArguments $1"
+	fi
+}
+function setLaunchExe() {
+	#@todo check exe
+	launchExe="$1"
+}
+
+function setMission() {
+	#@todo check mission
+	MISSION="$1"
+}
+
+function setProfileDir() {
+	#@todo check profile dir
+	PROFILE_DIR="$2"
+}
+
+function setWorld() {
+	# @todo check world
+	WORLD="$2"
+}
+
+function printUsage() {
+	printf "
+- Usage
+	DayZClientLauncher [-hvdwflBE] [-n name] [-m modsList] [-a serverAddress] [-p serverPort] [-s serverPassword] [-c coresNumber] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
+	
+- Options
+	-h, --help                        Show this help.
+	-v, --verbose                     Be verbose. Can be repeated for more verbosity
+	-d, --diagnostic                  Use diagnostic executable.
+	-w, --windowed                    Runs the game in windowed mode
+	-n, --name <name>                 Selects a profile from profiles folder with the 
+	                                   given name (also in-game nickname)
+
+	-f, --file-patching               Ensures that only PBOs are loaded 
+	                                   and NO unpacked data.
+	-B, --buldozer                    Starts the game in bulldozer mode.
+	-E, --no-pause                    Allows the game to run even when its window does not have focus.
+	-l, --do-logs                     Enables all log messages in the server RPT file.	
+	-m, --mods <mods>                 Loads the specified sub-folders for different mods.
+	                                   Separated by semi-colons. Absolute path and 
+	                                   multiple stacked folders are possible.
+	
+	-a, --server-address <address>    Connects to this server with this IP address or
+	                                   or domain name
+
+	-p, --server-port <port>          Connects to a server via this port
+	-s, --server-password <secret>    Uses this server passoword, if required
+
+	-c, --cpu-count <cores number>    Sets the number of logical CPU cores to use for
+	                                   parallel tasks processing. It should be less or
+	                                   equal than the numbers of available cores.
+
+	-X, --exe <exe file>              Selects what executable file to be used
+	-M, --mission <mission>           Selects what mission to use.
+	-P, --profile-folder <profile>    Path to the folder containing server profile. By default, 
+	                                   server logs are written to server profile folder. 
+	                                   Logs/dumps/etc will be created there, along with 
+	                                   BattlEye/BEC/Rcon related files. Windows Environment 
+	                                   variables are supported. E.g. &ampuserprofile&amp
+
+	-W, --world <world>               Selects a game world to be loaded by default
+
+"
+}
+
+function setupLaunchParameters() {
+	shortOpt="hvdwflBEn:m:a:p:s:c:X:M:P:W:"
+	longOpt="help,verbose,diagnostic,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-port:,server-password:,cpu-count:,exe:,mission:,profile-folder:,world:"
+
+	PARSED_ARGUMENTS=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
+	if [ "$?" != "0" ]; then
+		printUsage
+		exit 1
+	fi
+
+	eval set -- "$PARSED_ARGUMENTS"
+
+	while true; do
+		case $1 in
+		-h | --help)
+			printUsage
+			exit 1
+			;;
+		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+		-d | --diagnostic) useDiagnostic ;;
+		-f | --file-patching) useFilePatching ;;
+		-w | --windowed) addLaunchArguments "-window" ;;
+		-l | --do-logs) addLaunchArguments "-doLogs" ;;
+		-B | --buldozer) addLaunchArguments "-buldozer" ;;
+		-E | --no-pause) addLaunchArguments "-noPause" ;;
+		-n | --name)
+		echo "setting name $2"
+			NAME="$2"
+			shift
+			;;
+		-m | --mods)
+			addMod "$2"
+			shift
+			;;
+		-a | --server-address)
+			SERVER_ADDRESS="$2"
+			shift
+			;;
+		-p | --server-port)
+			SERVER_PORT="$2"
+			shift
+			;;
+		-s | --server-password)
+			SERVER_PASSWORD="$2"
+			shift
+			;;
+		-c | --cpu-count)
+			addLaunchArguments "-cpuCount=$2"
+			shift
+			;;
+		-X | --exe)
+			setLaunchExe "$2"
+			shift
+			;;
+		-M | --mission)
+			setMission "$2"
+			shift
+			;;
+		-P | --profile-folder)
+			setProfileDir "$2"
+			shift
+			;;
+		-W | --world)
+			setWorld "$2"
+			shift
+			;;
+
+		--)
+			shift
+			break
+			;;
+		*)
+			echo "Invalid option: $1"
+			printUsage
+			exit 1
+			;;
+		esac
+		shift #go to next arg
+	done
+
+	[[ ! -z $NAME ]] && argName="-name=$NAME"
+	[[ ! -z $SERVER_ADDRESS ]] && argAddress="-connect=$SERVER_ADDRESS"
+	[[ ! -z $SERVER_PORT ]] && addLaunchArguments "-port=$SERVER_PORT"
+	[[ ! -z $SERVER_PASSWORD ]] && argPassword="-password=$SERVER_PASSWORD"
+	[[ ! -z $MISSION ]] && argMission="-mission=$MISSION"
+	[[ ! -z $PROFILE_DIR ]] && argProfile="-profiles=$PROFILE_DIR"
+	[[ ! -z $MODS ]] && argMods="-mod=$MODS"
+	[[ ! -z $WORLD ]] && argWorld="-world=$WORLD"
+
+}
+
+function printLaunchParameters() {
+	echo "
+=========================================================	
+				Launching CLIENT
+---------------------------------------------------------
+EXE: 
+	$launchExe 
+
+ARGUMENTS: "
+	echo "$launchArguments" | sed "s/-/\n\t-/g" #| sed "s/\"//g"
+	echo " \
+$argName $argAddress $argPassword
+$argMission $argProfile
+$argMods $argWorld" | sed "s/-/\n\t-/g"
+
+	echo "
+---------------------------------------------------------
+"
+
+	[[ $verbosity -ge 2 ]] && echo "
+cmd.exe /C start \"\" \"$launchExe\" $launchArguments \"$argMission\" \"$argProfile\" \"$argMods\" \"$argName\" \"$argAddress\" \"$argPassword\" \"$argWorld\"
+"
+	echo "
+=========================================================
+"
+
+}
+
+#############################################
+
+setupLaunchParameters "$@"
+[[ $verbosity -ge 1 ]] && printLaunchParameters || echo "Launching client..."
+
+# A big yikes for windows
+cmd.exe /C start "" "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld"

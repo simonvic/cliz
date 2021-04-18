@@ -1,1 +1,259 @@
-/home/simonvic/.local/bin/DayZServerLauncher
+#!/bin/bash
+
+SERVER_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\DayZServer_x64.exe"
+DIAG_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"
+
+# ARGUMENTS FOR DAYZ EXE
+SERVER_CONFIG="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\serverDZ.cfg"
+SERVER_PROFILE_DIR="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\simonvicTestServer"
+SERVER_MISSION="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\mpmissions\dayzOffline.chernarusplus"
+SERVER_PORT=2302
+MODS=""
+SERVER_SIDE_MODS=""
+SERVER_BATTLEYE_PATH=""
+
+########################################################
+
+verbosity=0
+launchExe="$SERVER_EXE"
+launchArguments=""
+
+function useFilePatching() {
+	#grep server config
+	addLaunchArguments "-filePatching"
+}
+
+function useDiagnostic() {
+	launchExe=$DIAG_EXE
+	addLaunchArguments "-server"
+}
+
+function addMod() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$MODS" ]; then
+			MODS="$MODS;$1"
+		else
+			MODS="$1"
+		fi
+	fi
+}
+
+function addServerMod() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$SERVER_SIDE_MODS" ]; then
+			SERVER_SIDE_MODS="$SERVER_SIDE_MODS;$1"
+		else
+			SERVER_SIDE_MODS="$1"
+		fi
+	fi
+}
+
+function addLaunchArguments() {
+	if [ ! -z "$1" ]; then
+		launchArguments="$launchArguments $1"
+	fi
+}
+
+function setServerPort() {
+	#@todo check port
+	SERVER_PORT="$1"
+}
+
+function setLaunchExe() {
+	#@todo check exe
+	launchExe="$1"
+}
+
+function setServerConfig() {
+	# @todo check config
+	# [[ -e "$1" ]] && : || echo "The config $1 doesn't exists or is not valid " 
+	SERVER_CONFIG=$1
+}
+
+function setServerMission() {
+	#@todo check mission
+	SERVER_MISSION="$1"
+}
+
+function setProfileDir() {
+	#@todo check profile dir
+	SERVER_PROFILE_DIR="$2"
+}
+
+function setProfileDir() {
+	#@todo check be path
+	SERVER_BATTLEYE_PATH="$2"
+}
+
+function printUsage() {
+	printf "
+- Usage
+	DayZServerLauncher [-hvdflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
+	
+- Options
+	-h, --help                        Show this help.
+	-v, --verbose                     Be verbose. Can be repeated for more verbosity
+	-d, --diagnostic                  Use diagnostic executable.
+	-f, --file-patching               Ensures that only PBOs are loaded 
+	                                   and NO unpacked data.
+
+	-l, --do-logs                     Enables all log messages in the server RPT file.
+	-a, --admin-log                   Enables the admin log.
+	-n, --net-log                     Enables the network traffic logging.
+	-F, --freeze-check                Stops the server when frozen for more than 
+	                                   5 min and create a dump file.
+	
+	-m, --mods <mods>                 Loads the specified sub-folders for different mods.
+	                                   Separated by semi-colons. Absolute path and 
+	                                   multiple stacked folders are possible.
+
+	-s, --server-mods <mods>          Loads the specified sub-folders for different
+	                                   server-side (not broadcasted to clients) mods.
+	                                   Separated by semi-colons. Absolute path and 
+	                                   multiple stacked folders are possible.
+
+	-p, --port <port>                 Port to have dedicated server listen on.
+	-c, --cpu-count <cores number>    Sets the number of logical CPU cores to use for
+	                                  parallel tasks processing. It should be less or
+	                                   equal than the numbers of available cores.
+
+	-L, --limit-fps <max fps>         Limits server FPS to specified value (current 
+	                                   max is 200) to lower CPU usage of low population servers.
+
+	-X, --exe <exe file>              Selects what executable file to be used
+	-C, --config <config>             Selects the Server Config File.
+	-M, --mission <mission>           Selects what mission to use.
+	-P, --profile-folder <profile>    Path to the folder containing server profile. By default, 
+	                                   server logs are written to server profile folder. 
+	                                   Logs/dumps/etc will be created there, along with 
+	                                   BattlEye/BEC/Rcon related files. Windows Environment 
+	                                   variables are supported. E.g. &ampuserprofile&amp
+
+	-B, --battleye-path <path>        Sets a custom path to the Battleye files
+
+"
+}
+
+function setupLaunchParameters() {
+	shortOpt="hvdflanFm:s:p:c:L:X:C:M:P:B:"
+	longOpt="help,verbose,diagnostic,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,exe:,config:,mission:,profile-folder:,battleye-path:"
+
+	PARSED_ARGUMENTS=$(getopt -n DayZServerLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
+	if [ "$?" != "0" ]; then
+		printUsage
+		exit 1
+	fi
+
+	eval set -- "$PARSED_ARGUMENTS"
+
+	while true; do
+		case $1 in
+		-h | --help)
+			printUsage
+			exit 1
+			;;
+		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+		-d | --diagnostic) useDiagnostic ;;
+		-f | --file-patching) useFilePatching ;;
+		-l | --do-logs) addLaunchArguments "-doLogs " ;;
+		-a | --admin-log) addLaunchArguments "-adminLog" ;;
+		-n | --net-log) addLaunchArguments "-netLog" ;;
+		-F | --freeze-check) addLaunchArguments "-freezeCheck" ;;
+		-m | --mods)
+			addMod "$2"
+			shift
+			;;
+		-s | --server-mods)
+			addServerMod "$2"
+			shift
+			;;
+		-p | --port)
+			setServerPort "$2"
+			shift
+			;;
+		-c | --cpu-count)
+			addLaunchArguments "-cpuCount=$2"
+			shift
+			;;
+		-L | --limit-fps)
+			addLaunchArguments "-limitFPS=$2"
+			shift
+			;;
+		-X | --exe)
+			setLaunchExe "$2"
+			shift
+			;;
+		-C | --config)
+			setServerConfig "$2"
+			shift
+			;;
+		-M | --mission)
+			setServerMission "$2"
+			shift
+			;;
+		-P | --profile-folder)
+			setProfileDir "$2"
+			shift
+			;;
+		-B | --battleye-path)
+			setBEPath "$2"
+			shift
+			;;
+
+		--)
+			shift
+			break
+			;;
+		*)
+			echo "Invalid option: $1"
+			printUsage
+			exit 1
+			;;
+		esac
+		shift #go to next arg
+	done
+
+	[[ ! -z $SERVER_PORT ]] && addLaunchArguments "-port=$SERVER_PORT"
+	[[ ! -z $SERVER_CONFIG ]] && argConfig="-config=$SERVER_CONFIG"
+	[[ ! -z $SERVER_MISSION ]] && argMission="-mission=$SERVER_MISSION"
+	[[ ! -z $SERVER_PROFILE_DIR ]] && argProfile="-profiles=$SERVER_PROFILE_DIR"
+	[[ ! -z $MODS ]] && argMods="-mod=$MODS"
+	[[ ! -z $SERVER_SIDE_MODS ]] && argServerMods="-serverMod=$SERVER_SIDE_MODS"
+	[[ ! -z $SERVER_BATTLEYE_PATH ]] && argBEPath="-BEpath=$SERVER_BATTLEYE_PATH"
+
+}
+
+function printLaunchParameters() {
+	echo "
+=========================================================	
+				Launching SERVER
+---------------------------------------------------------
+EXE: 
+	$launchExe 
+
+ARGUMENTS: "
+	echo "$launchArguments" | sed "s/-/\n\t-/g" #| sed "s/\"//g"
+	echo " \
+$argConfig $argMission $argProfile
+$argMods $argServerMods" | sed "s/-/\n\t-/g"
+
+	echo "
+---------------------------------------------------------
+"
+
+	[[ $verbosity -ge 2 ]] && echo "
+cmd.exe /C start \"\" \"$launchExe\" $launchArguments \"$argConfig\" \"$argMission\" \"$argProfile\" \"$argMods\" \"$argServerMods\" \"$argBEPath\"
+"
+	echo "
+=========================================================
+"
+
+}
+
+#############################################
+
+setupLaunchParameters "$@"
+[[ $verbosity -ge 1 ]] && printLaunchParameters || echo "Launching server..."
+
+# A big yikes for windows
+cmd.exe /C start "" "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath"
