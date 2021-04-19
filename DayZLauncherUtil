@@ -1,0 +1,31 @@
+#!/bin/bash
+
+function wStart() {
+	# lol...
+	cmd.exe /C start "" "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}"
+}
+
+function wFindProcess() {
+	tasklist.exe /NH | findstr.exe /I "$1"
+}
+
+function wTaskKill() {
+	taskkill.exe /F /IM "$1" /T
+}
+
+function printFunctionBody() {
+	# get the body (with dollars)
+	local functionBody="$(type "$1" | sed '1,3d;$d')"
+
+	# array of args
+	args=("$@")
+	# get number of elements
+	ELEMENTS=${#args[@]}
+
+	for ((i = 0; i <= $ELEMENTS; i++)); do
+		# replace dollar[0-ELEMENTS] with its variable
+		functionBody=${functionBody/\$\{$i\}/${args[${i}]}}
+	done
+
+	printf "$functionBody\n"
+}

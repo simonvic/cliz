@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source DayZLauncherUtil
+
 SERVER_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\DayZServer_x64.exe"
 DIAG_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"
 
@@ -17,6 +19,30 @@ SERVER_BATTLEYE_PATH=""
 verbosity=0
 launchExe="$SERVER_EXE"
 launchArguments=""
+
+function killProcess() {
+
+	local serverProcName="DayZServer_x64.exe"
+	local diagProcName="DayZDiag_x64.exe"
+
+	# if server process is alive, kill it
+	if [ ! -z "$(wFindProcess $serverProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $serverProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$serverProcName"
+		wTaskKill "$serverProcName"
+	fi
+
+	# if diagnostic process is alive, kill it
+	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
+		wTaskKill "$diagProcName"
+	fi
+
+	[[ $verbosity -ge 1 ]] && echo "
+---------------------------------------------------------
+"
+}
 
 function useFilePatching() {
 	#grep server config
@@ -66,7 +92,7 @@ function setLaunchExe() {
 
 function setServerConfig() {
 	# @todo check config
-	# [[ -e "$1" ]] && : || echo "The config $1 doesn't exists or is not valid " 
+	# [[ -e "$1" ]] && : || echo "The config $1 doesn't exists or is not valid "
 	SERVER_CONFIG=$1
 }
 
@@ -88,11 +114,12 @@ function setProfileDir() {
 function printUsage() {
 	printf "
 - Usage
-	DayZServerLauncher [-hvdflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
+	DayZServerLauncher [-hvkdflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
 	
 - Options
 	-h, --help                        Show this help.
 	-v, --verbose                     Be verbose. Can be repeated for more verbosity
+	-k, --kill                        Kill active processes before starting a new one
 	-d, --diagnostic                  Use diagnostic executable.
 	-f, --file-patching               Ensures that only PBOs are loaded 
 	                                   and NO unpacked data.
@@ -135,8 +162,8 @@ function printUsage() {
 }
 
 function setupLaunchParameters() {
-	shortOpt="hvdflanFm:s:p:c:L:X:C:M:P:B:"
-	longOpt="help,verbose,diagnostic,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,exe:,config:,mission:,profile-folder:,battleye-path:"
+	shortOpt="hvkdflanFm:s:p:c:L:X:C:M:P:B:"
+	longOpt="help,verbose,kill,diagnostic,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,exe:,config:,mission:,profile-folder:,battleye-path:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZServerLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -153,6 +180,7 @@ function setupLaunchParameters() {
 			exit 1
 			;;
 		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+		-k | --kill) requestedKillProcess=true ;;
 		-d | --diagnostic) useDiagnostic ;;
 		-f | --file-patching) useFilePatching ;;
 		-l | --do-logs) addLaunchArguments "-doLogs " ;;
@@ -224,7 +252,7 @@ function setupLaunchParameters() {
 }
 
 function printLaunchParameters() {
-	echo "
+	printf "
 =========================================================	
 				Launching SERVER
 ---------------------------------------------------------
@@ -232,28 +260,33 @@ EXE:
 	$launchExe 
 
 ARGUMENTS: "
-	echo "$launchArguments" | sed "s/-/\n\t-/g" #| sed "s/\"//g"
-	echo " \
-$argConfig $argMission $argProfile
-$argMods $argServerMods" | sed "s/-/\n\t-/g"
+	# Print launch arguments vertically
+	printf "\
+$launchArguments
+$argConfig
+$argMission
+$argProfile
 
-	echo "
----------------------------------------------------------
-"
+" | sed "s/-/\n\t-/g"
 
-	[[ $verbosity -ge 2 ]] && echo "
-cmd.exe /C start \"\" \"$launchExe\" $launchArguments \"$argConfig\" \"$argMission\" \"$argProfile\" \"$argMods\" \"$argServerMods\" \"$argBEPath\"
-"
-	echo "
-=========================================================
-"
+	# Print mods vertically
+	printf "	${argMods//;/\\n\\t\\t}
+
+" | sed "s|=|=\n\t\t|g"
+
+	# Print server side mods vertically
+	printf "	${argServerMods//;/\\n\\t\\t}
+
+" | sed "s|=|=\n\t\t|g"
 
 }
 
 #############################################
 
 setupLaunchParameters "$@"
-[[ $verbosity -ge 1 ]] && printLaunchParameters || echo "Launching server..."
+[[ $verbosity -ge 1 ]] && printLaunchParameters
 
-# A big yikes for windows
-cmd.exe /C start "" "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath"
+[[ "$requestedKillProcess" = true ]] && killProcess
+
+[[ $verbosity -ge 2 ]] && printFunctionBody wStart "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath"
+wStart "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath"

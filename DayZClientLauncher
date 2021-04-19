@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source DayZLauncherUtil
+
 CLIENT_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZ_x64.exe"
 DIAG_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"
 
@@ -18,6 +20,30 @@ MODS=""
 verbosity=0
 launchExe="$CLIENT_EXE"
 launchArguments=""
+
+function killProcess() {
+
+	local clientProcName="DayZ_x64.exe"
+	local diagProcName="DayZDiag_x64.exe"
+
+	# if client process is alive, kill it
+	if [ ! -z "$(wFindProcess $clientProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $clientProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$clientProcName"
+		wTaskKill "$clientProcName"
+	fi
+
+	# if diagnostic process is alive, kill it
+	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
+		wTaskKill "$diagProcName"
+	fi
+
+	[[ $verbosity -ge 1 ]] && echo "
+---------------------------------------------------------
+"
+}
 
 function useFilePatching() {
 	#grep server config
@@ -67,11 +93,12 @@ function setWorld() {
 function printUsage() {
 	printf "
 - Usage
-	DayZClientLauncher [-hvdwflBE] [-n name] [-m modsList] [-a serverAddress] [-p serverPort] [-s serverPassword] [-c coresNumber] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
+	DayZClientLauncher [-hvkdwflBE] [-n name] [-m modsList] [-a serverAddress] [-p serverPort] [-s serverPassword] [-c coresNumber] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
 	
 - Options
 	-h, --help                        Show this help.
 	-v, --verbose                     Be verbose. Can be repeated for more verbosity
+	-k, --kill                        Kill active processes before starting a new one
 	-d, --diagnostic                  Use diagnostic executable.
 	-w, --windowed                    Runs the game in windowed mode
 	-n, --name <name>                 Selects a profile from profiles folder with the 
@@ -110,8 +137,8 @@ function printUsage() {
 }
 
 function setupLaunchParameters() {
-	shortOpt="hvdwflBEn:m:a:p:s:c:X:M:P:W:"
-	longOpt="help,verbose,diagnostic,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-port:,server-password:,cpu-count:,exe:,mission:,profile-folder:,world:"
+	shortOpt="hvkdwflBEn:m:a:p:s:c:X:M:P:W:"
+	longOpt="help,verbose,kill,diagnostic,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-port:,server-password:,cpu-count:,exe:,mission:,profile-folder:,world:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -128,6 +155,7 @@ function setupLaunchParameters() {
 			exit 1
 			;;
 		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+		-k | --kill) requestedKillProcess=true ;;
 		-d | --diagnostic) useDiagnostic ;;
 		-f | --file-patching) useFilePatching ;;
 		-w | --windowed) addLaunchArguments "-window" ;;
@@ -135,7 +163,6 @@ function setupLaunchParameters() {
 		-B | --buldozer) addLaunchArguments "-buldozer" ;;
 		-E | --no-pause) addLaunchArguments "-noPause" ;;
 		-n | --name)
-		echo "setting name $2"
 			NAME="$2"
 			shift
 			;;
@@ -201,37 +228,37 @@ function setupLaunchParameters() {
 }
 
 function printLaunchParameters() {
-	echo "
+	printf "
 =========================================================	
-				Launching CLIENT
+                Launching CLIENT
 ---------------------------------------------------------
 EXE: 
 	$launchExe 
 
 ARGUMENTS: "
-	echo "$launchArguments" | sed "s/-/\n\t-/g" #| sed "s/\"//g"
-	echo " \
-$argName $argAddress $argPassword
-$argMission $argProfile
-$argMods $argWorld" | sed "s/-/\n\t-/g"
+	# Print launch arguments vertically
+	printf "\
+$launchArguments $argName $argAddress $argPassword
+$argMission 
+$argProfile
+$argWorld 
+" | sed "s/-/\n\t-/g"
 
-	echo "
----------------------------------------------------------
-"
+	# Print mods vertically
+	printf "	${argMods//;/\\n\\t\\t}
 
-	[[ $verbosity -ge 2 ]] && echo "
-cmd.exe /C start \"\" \"$launchExe\" $launchArguments \"$argMission\" \"$argProfile\" \"$argMods\" \"$argName\" \"$argAddress\" \"$argPassword\" \"$argWorld\"
-"
-	echo "
-=========================================================
-"
+" | sed "s|=|=\n\t\t|g"
 
 }
 
 #############################################
+# MAIN
+#############################################
 
 setupLaunchParameters "$@"
-[[ $verbosity -ge 1 ]] && printLaunchParameters || echo "Launching client..."
+[[ $verbosity -ge 1 ]] && printLaunchParameters
 
-# A big yikes for windows
-cmd.exe /C start "" "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld"
+[[ "$requestedKillProcess" = true ]] && killProcess
+
+[[ $verbosity -ge 2 ]] && printFunctionBody wStart "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld"
+wStart "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld"
