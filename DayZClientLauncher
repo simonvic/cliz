@@ -8,7 +8,6 @@ DIAG_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"
 # ARGUMENTS FOR DAYZ EXE
 NAME=""
 SERVER_ADDRESS=""
-SERVER_PORT=""
 SERVER_PASSWORD=""
 PROFILE_DIR=""
 MISSION=""
@@ -24,45 +23,44 @@ launchArguments=""
 function printUsage() {
 	printf "
 - Usage
-	DayZClientLauncher [-hvkdwflBE] [-n name] [-m modsList] [-a serverAddress] [-p serverPort] [-s serverPassword] [-c coresNumber] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
+	DayZClientLauncher [-hvkdwflsBE] [-n name] [-m modsList] [-a serverAddress:port] [-p password] [-c coresNumber] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
 	
 - Options
-	-h, --help                        Show this help.
-	-v, --verbose                     Be verbose. Can be repeated for more verbosity
-	-k, --kill                        Kill active processes before starting a new one
-	-d, --diagnostic                  Use diagnostic executable.
-	-w, --windowed                    Runs the game in windowed mode
-	-n, --name <name>                 Selects a profile from profiles folder with the 
-	                                   given name (also in-game nickname)
+	-h, --help                             Show this help.
+	-v, --verbose                          Be verbose. Can be repeated for more verbosity
+	-k, --kill                             Kill active processes before starting a new one
+	-d, --diagnostic                       Use diagnostic executable.
+	-w, --windowed                         Runs the game in windowed mode
+	-n, --name <name>                      Selects a profile from profiles folder with the 
+	                                        given name (also in-game nickname)
 
-	-f, --file-patching               Ensures that only PBOs are loaded 
-	                                   and NO unpacked data.
-	-B, --buldozer                    Starts the game in bulldozer mode.
-	-E, --no-pause                    Allows the game to run even when its window does not have focus.
-	-l, --do-logs                     Enables all log messages in the server RPT file.	
-	-m, --mods <mods>                 Loads the specified sub-folders for different mods.
-	                                   Separated by semi-colons. Absolute path and 
-	                                   multiple stacked folders are possible.
-	
-	-a, --server-address <address>    Connects to this server with this IP address or
-	                                   or domain name
+	-f, --file-patching                    Ensures that only PBOs are loaded
+	                                        and NO unpacked data.
+	-B, --buldozer                         Starts the game in bulldozer mode.
+	-E, --no-pause                         Allows the game to run even when its window does not have focus.
+	-l, --do-logs                          Enables all log messages in the server RPT file.
+	-s, --script-debug                     Enable script debug
+	-m, --mods <mods>                      Loads the specified sub-folders for different mods.
+	                                        Separated by semi-colons. Absolute path and 
+	                                        multiple stacked folders are possible.
 
-	-p, --server-port <port>          Connects to a server via this port
-	-s, --server-password <secret>    Uses this server passoword, if required
+	-a, --server-address <address:port>    Connects to this server with this IP address or
+	                                        or domain name and port
 
-	-c, --cpu-count <cores number>    Sets the number of logical CPU cores to use for
-	                                   parallel tasks processing. It should be less or
-	                                   equal than the numbers of available cores.
+	-p, --server-password <password>      Uses this server passoword, if required
+	-c, --cpu-count <cores number>         Sets the number of logical CPU cores to use for
+	                                        parallel tasks processing. It should be less or
+	                                        equal than the numbers of available cores.
 
-	-X, --exe <exe file>              Selects what executable file to be used
-	-M, --mission <mission>           Selects what mission to use.
-	-P, --profile-folder <profile>    Path to the folder containing server profile. By default, 
-	                                   server logs are written to server profile folder. 
-	                                   Logs/dumps/etc will be created there, along with 
-	                                   BattlEye/BEC/Rcon related files. Windows Environment 
-	                                   variables are supported. E.g. &ampuserprofile&amp
+	-X, --exe <exe file>                   Selects what executable file to be used
+	-M, --mission <mission>                Selects what mission to use.
+	-P, --profile-folder <profile>         Path to the folder containing server profile. By default, 
+	                                        server logs are written to server profile folder. 
+	                                        Logs/dumps/etc will be created there, along with 
+	                                        BattlEye/BEC/Rcon related files. Windows Environment 
+	                                        variables are supported. E.g. &ampuserprofile&amp
 
-	-W, --world <world>               Selects a game world to be loaded by default
+	-W, --world <world>                    Selects a game world to be loaded by default
 
 "
 }
@@ -138,8 +136,8 @@ function setWorld() {
 }
 
 function setupLaunchParameters() {
-	shortOpt="hvkdwflBEn:m:a:p:s:c:X:M:P:W:"
-	longOpt="help,verbose,kill,diagnostic,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-port:,server-password:,cpu-count:,exe:,mission:,profile-folder:,world:"
+	shortOpt="hvkdswflBEn:m:a:p:c:X:M:P:W:"
+	longOpt="help,verbose,kill,diagnostic,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,exe:,mission:,profile-folder:,world:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -158,6 +156,7 @@ function setupLaunchParameters() {
 		-v | --verbose) verbosity=$((verbosity + 1)) ;;
 		-k | --kill) requestedKillProcess=true ;;
 		-d | --diagnostic) useDiagnostic ;;
+		-s | --script-debug) addLaunchArguments "-scriptDebug=true" ;;
 		-f | --file-patching) useFilePatching ;;
 		-w | --windowed) addLaunchArguments "-window" ;;
 		-l | --do-logs) addLaunchArguments "-doLogs" ;;
@@ -175,11 +174,7 @@ function setupLaunchParameters() {
 			SERVER_ADDRESS="$2"
 			shift
 			;;
-		-p | --server-port)
-			SERVER_PORT="$2"
-			shift
-			;;
-		-s | --server-password)
+		-p | --server-passoword)
 			SERVER_PASSWORD="$2"
 			shift
 			;;
@@ -219,7 +214,6 @@ function setupLaunchParameters() {
 
 	[[ ! -z $NAME ]] && argName="-name=$NAME"
 	[[ ! -z $SERVER_ADDRESS ]] && argAddress="-connect=$SERVER_ADDRESS"
-	[[ ! -z $SERVER_PORT ]] && addLaunchArguments "-port=$SERVER_PORT"
 	[[ ! -z $SERVER_PASSWORD ]] && argPassword="-password=$SERVER_PASSWORD"
 	[[ ! -z $MISSION ]] && argMission="-mission=$MISSION"
 	[[ ! -z $PROFILE_DIR ]] && argProfile="-profiles=$PROFILE_DIR"
