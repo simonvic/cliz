@@ -20,97 +20,6 @@ verbosity=0
 launchExe="$SERVER_EXE"
 launchArguments=""
 
-function killProcess() {
-
-	local serverProcName="DayZServer_x64.exe"
-	local diagProcName="DayZDiag_x64.exe"
-
-	# if server process is alive, kill it
-	if [ ! -z "$(wFindProcess $serverProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $serverProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$serverProcName"
-		wTaskKill "$serverProcName"
-	fi
-
-	# if diagnostic process is alive, kill it
-	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
-		wTaskKill "$diagProcName"
-	fi
-
-	[[ $verbosity -ge 1 ]] && echo "
----------------------------------------------------------
-"
-}
-
-function useFilePatching() {
-	#grep server config
-	addLaunchArguments "-filePatching"
-}
-
-function useDiagnostic() {
-	launchExe=$DIAG_EXE
-	addLaunchArguments "-server"
-}
-
-function addMod() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$MODS" ]; then
-			MODS="$MODS;$1"
-		else
-			MODS="$1"
-		fi
-	fi
-}
-
-function addServerMod() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$SERVER_SIDE_MODS" ]; then
-			SERVER_SIDE_MODS="$SERVER_SIDE_MODS;$1"
-		else
-			SERVER_SIDE_MODS="$1"
-		fi
-	fi
-}
-
-function addLaunchArguments() {
-	if [ ! -z "$1" ]; then
-		launchArguments="$launchArguments $1"
-	fi
-}
-
-function setServerPort() {
-	#@todo check port
-	SERVER_PORT="$1"
-}
-
-function setLaunchExe() {
-	#@todo check exe
-	launchExe="$1"
-}
-
-function setServerConfig() {
-	# @todo check config
-	# [[ -e "$1" ]] && : || echo "The config $1 doesn't exists or is not valid "
-	SERVER_CONFIG=$1
-}
-
-function setServerMission() {
-	#@todo check mission
-	SERVER_MISSION="$1"
-}
-
-function setProfileDir() {
-	#@todo check profile dir
-	SERVER_PROFILE_DIR="$2"
-}
-
-function setProfileDir() {
-	#@todo check be path
-	SERVER_BATTLEYE_PATH="$2"
-}
-
 function printUsage() {
 	printf "
 - Usage
@@ -159,6 +68,97 @@ function printUsage() {
 	-B, --battleye-path <path>        Sets a custom path to the Battleye files
 
 "
+}
+
+function killProcess() {
+
+	local serverProcName="DayZServer_x64.exe"
+	local diagProcName="DayZDiag_x64.exe"
+
+	# if server process is alive, kill it
+	if [ ! -z "$(wFindProcess $serverProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $serverProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$serverProcName"
+		wTaskKill "$serverProcName"
+	fi
+
+	# if diagnostic process is alive, kill it
+	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
+		wTaskKill "$diagProcName"
+	fi
+
+	[[ $verbosity -ge 1 ]] && echo "
+---------------------------------------------------------
+"
+}
+
+function addLaunchArguments() {
+	if [ ! -z "$1" ]; then
+		launchArguments="$launchArguments $1"
+	fi
+}
+
+function useFilePatching() {
+	#grep server config
+	addLaunchArguments "-filePatching"
+}
+
+function useDiagnostic() {
+	launchExe=$DIAG_EXE
+	addLaunchArguments "-server"
+}
+
+function addMod() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$MODS" ]; then
+			MODS="$MODS;$1"
+		else
+			MODS="$1"
+		fi
+	fi
+}
+
+function addServerMod() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$SERVER_SIDE_MODS" ]; then
+			SERVER_SIDE_MODS="$SERVER_SIDE_MODS;$1"
+		else
+			SERVER_SIDE_MODS="$1"
+		fi
+	fi
+}
+
+function setServerPort() {
+	#@todo check port
+	SERVER_PORT="$1"
+}
+
+function setLaunchExe() {
+	#@todo check exe
+	launchExe="$1"
+}
+
+function setServerConfig() {
+	# @todo check config
+	# [[ -e "$1" ]] && : || echo "The config $1 doesn't exists or is not valid "
+	SERVER_CONFIG=$1
+}
+
+function setServerMission() {
+	#@todo check mission
+	SERVER_MISSION="$1"
+}
+
+function setProfileDir() {
+	#@todo check profile dir
+	SERVER_PROFILE_DIR="$2"
+}
+
+function setProfileDir() {
+	#@todo check be path
+	SERVER_BATTLEYE_PATH="$2"
 }
 
 function setupLaunchParameters() {
@@ -281,6 +281,8 @@ $argProfile
 
 }
 
+#############################################
+# MAIN
 #############################################
 
 setupLaunchParameters "$@"

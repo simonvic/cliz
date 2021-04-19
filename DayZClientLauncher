@@ -21,75 +21,6 @@ verbosity=0
 launchExe="$CLIENT_EXE"
 launchArguments=""
 
-function killProcess() {
-
-	local clientProcName="DayZ_x64.exe"
-	local diagProcName="DayZDiag_x64.exe"
-
-	# if client process is alive, kill it
-	if [ ! -z "$(wFindProcess $clientProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $clientProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$clientProcName"
-		wTaskKill "$clientProcName"
-	fi
-
-	# if diagnostic process is alive, kill it
-	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
-		wTaskKill "$diagProcName"
-	fi
-
-	[[ $verbosity -ge 1 ]] && echo "
----------------------------------------------------------
-"
-}
-
-function useFilePatching() {
-	#grep server config
-	useDiagnostic
-	addLaunchArguments "-filePatching"
-}
-
-function useDiagnostic() {
-	launchExe=$DIAG_EXE
-}
-
-function addMod() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$MODS" ]; then
-			MODS="$MODS;$1"
-		else
-			MODS="$1"
-		fi
-	fi
-}
-
-function addLaunchArguments() {
-	if [ ! -z "$1" ]; then
-		launchArguments="$launchArguments $1"
-	fi
-}
-function setLaunchExe() {
-	#@todo check exe
-	launchExe="$1"
-}
-
-function setMission() {
-	#@todo check mission
-	MISSION="$1"
-}
-
-function setProfileDir() {
-	#@todo check profile dir
-	PROFILE_DIR="$2"
-}
-
-function setWorld() {
-	# @todo check world
-	WORLD="$2"
-}
-
 function printUsage() {
 	printf "
 - Usage
@@ -134,6 +65,76 @@ function printUsage() {
 	-W, --world <world>               Selects a game world to be loaded by default
 
 "
+}
+
+function killProcess() {
+
+	local clientProcName="DayZ_x64.exe"
+	local diagProcName="DayZDiag_x64.exe"
+
+	# if client process is alive, kill it
+	if [ ! -z "$(wFindProcess $clientProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $clientProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$clientProcName"
+		wTaskKill "$clientProcName"
+	fi
+
+	# if diagnostic process is alive, kill it
+	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
+		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
+		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
+		wTaskKill "$diagProcName"
+	fi
+
+	[[ $verbosity -ge 1 ]] && echo "
+---------------------------------------------------------
+"
+}
+
+function addLaunchArguments() {
+	if [ ! -z "$1" ]; then
+		launchArguments="$launchArguments $1"
+	fi
+}
+
+function useFilePatching() {
+	#grep server config
+	useDiagnostic
+	addLaunchArguments "-filePatching"
+}
+
+function useDiagnostic() {
+	launchExe=$DIAG_EXE
+}
+
+function addMod() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$MODS" ]; then
+			MODS="$MODS;$1"
+		else
+			MODS="$1"
+		fi
+	fi
+}
+
+function setLaunchExe() {
+	#@todo check exe
+	launchExe="$1"
+}
+
+function setMission() {
+	#@todo check mission
+	MISSION="$1"
+}
+
+function setProfileDir() {
+	#@todo check profile dir
+	PROFILE_DIR="$2"
+}
+
+function setWorld() {
+	# @todo check world
+	WORLD="$2"
 }
 
 function setupLaunchParameters() {
