@@ -8,84 +8,84 @@ MODS=""
 verbosity=0
 
 function printUsage() {
-    printf "
+	printf "
 - Usage
 	DayZWorkbenchLauncher [-hv] [-m modsList] [-X exeFile]
 	
 - Options
 	-h, --help              Show this help.
 	-v, --verbose           Be verbose. Can be repeated for more verbosity
-    -m, --mods <mods>       Loads the specified sub-folders for different mods.
+	-m, --mods <mods>       Loads the specified sub-folders for different mods.
 	                         Separated by semi-colons. Absolute path and 
 	                         multiple stacked folders are possible.
 
-    -X, --exe <exe path>    Selects what executable file to be used
+	-X, --exe <exe path>    Selects what executable file to be used
 "
 }
 
 function setupLaunchParameters() {
-    shortOpt="hvm:X:"
-    longOpt="help,verbose,mods:,exe:"
+	shortOpt="hvm:X:"
+	longOpt="help,verbose,mods:,exe:"
 
-    PARSED_ARGUMENTS=$(getopt -n DayZWorkbenchLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
-    if [ "$?" != "0" ]; then
-        printUsage
-        exit 1
-    fi
+	PARSED_ARGUMENTS=$(getopt -n DayZWorkbenchLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
+	if [ "$?" != "0" ]; then
+		printUsage
+		exit 1
+	fi
 
-    eval set -- "$PARSED_ARGUMENTS"
+	eval set -- "$PARSED_ARGUMENTS"
 
-    while true; do
-        case $1 in
-        -h | --help)
-            printUsage
-            exit 1
-            ;;
-        -v | --verbose) verbosity=$((verbosity + 1)) ;;
-        -m | --mods)
-            addMod "$2"
-            shift
-            ;;
-        -X | --exe)
-            setWorkbenchExe "$2"
-            shift
-            ;;
-        --)
-            shift
-            break
-            ;;
-        *)
-            echo "Invalid option: $1"
-            printUsage
-            exit 1
-            ;;
-        esac
-        shift #go to next arg
-    done
+	while true; do
+		case $1 in
+		-h | --help)
+			printUsage
+			exit 1
+			;;
+		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+		-m | --mods)
+			addMod "$2"
+			shift
+			;;
+		-X | --exe)
+			setWorkbenchExe "$2"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			echo "Invalid option: $1"
+			printUsage
+			exit 1
+			;;
+		esac
+		shift #go to next arg
+	done
 
-    [[ ! -z $MODS ]] && argMods="-mod=$MODS"
+	[[ ! -z $MODS ]] && argMods="-mod=$MODS"
 
 }
 
 function setWorkbenchExe() {
-    if [ ! -z "$1" ]; then
-        WORKBENCH_EXE="$1"
-    fi
+	if [ ! -z "$1" ]; then
+		WORKBENCH_EXE="$1"
+	fi
 }
 
 function addMod() {
-    if [ ! -z "$1" ]; then
-        if [ ! -z "$MODS" ]; then
-            MODS="$MODS;$1"
-        else
-            MODS="$1"
-        fi
-    fi
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$MODS" ]; then
+			MODS="$MODS;$1"
+		else
+			MODS="$1"
+		fi
+	fi
 }
 
 function launchWorkbench() {
-    # Don't ask me why... cd is needed
-    cmd.exe /c "cd" "/D" "${1}" "&&" "START" ".\\${2}" "${3}"
+	# Don't ask me why... cd is needed
+	cmd.exe /c "cd" "/D" "${1}" "&&" "START" ".\\${2}" "${3}"
 }
 
 setupLaunchParameters "$@"

@@ -119,11 +119,11 @@ It is meant to be used in a [WSL](https://docs.microsoft.com/en-us/windows/wsl/i
 - Options
 	-h, --help              Show this help.
 	-v, --verbose           Be verbose. Can be repeated for more verbosity.
-    -m, --mods <mods>       Loads the specified sub-folders for different mods.
+	-m, --mods <mods>       Loads the specified sub-folders for different mods.
 	                         Separated by semi-colons. Absolute path and 
 	                         multiple stacked folders are possible.
 
-    -X, --exe <exe path>    Selects what executable file to be used.
+	-X, --exe <exe path>    Selects what executable file to be used
 
 ```
 
