@@ -80,6 +80,9 @@ function killProcess() {
 		[[ $verbosity -ge 1 ]] && echo "Killing $serverProcName"
 		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$serverProcName"
 		wTaskKill "$serverProcName"
+		[[ $verbosity -ge 1 ]] && printf "
+|---------------------------------------------------------
+"
 	fi
 
 	# if diagnostic process is alive, kill it
@@ -87,11 +90,10 @@ function killProcess() {
 		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
 		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
 		wTaskKill "$diagProcName"
-	fi
-
-	[[ $verbosity -ge 1 ]] && echo "
----------------------------------------------------------
+		[[ $verbosity -ge 1 ]] && printf "
+|---------------------------------------------------------
 "
+	fi
 }
 
 function addLaunchArguments() {
@@ -153,12 +155,12 @@ function setServerMission() {
 
 function setProfileDir() {
 	#@todo check profile dir
-	SERVER_PROFILE_DIR="$2"
+	SERVER_PROFILE_DIR="$1"
 }
 
 function setProfileDir() {
 	#@todo check be path
-	SERVER_BATTLEYE_PATH="$2"
+	SERVER_BATTLEYE_PATH="$1"
 }
 
 function setupLaunchParameters() {
@@ -252,32 +254,34 @@ function setupLaunchParameters() {
 }
 
 function printLaunchParameters() {
-	printf "
-=========================================================	
-				Launching SERVER
----------------------------------------------------------
-EXE: 
-	$launchExe 
-
-ARGUMENTS: "
 	# Print launch arguments vertically
-	printf "\
-$launchArguments
-$argConfig
-$argMission
-$argProfile
-
-" | sed "s/-/\n\t-/g"
+	local formattedArgs=$(printf "
+|$launchArguments
+|$argConfig
+|$argMission
+|$argProfile" | sed "s/-/\n|\t-/g")
 
 	# Print mods vertically
-	printf "	${argMods//;/\\n\\t\\t}
-
-" | sed "s|=|=\n\t\t|g"
+	local formattedMods=$(printf "
+|	${argMods//;/\\n|\\t\\t}" | sed "s/=/=\n|\t\t/g")
 
 	# Print server side mods vertically
-	printf "	${argServerMods//;/\\n\\t\\t}
+	local formattedServerMods=$(printf "
+|	${argServerMods//;/\\n|\\t\\t}" | sed "s/=/=\n|\t\t/g")
 
-" | sed "s|=|=\n\t\t|g"
+	printf "
+/=========================================================
+|                Launching SERVER
+|
+|-EXE: 
+|	$launchExe 
+|
+|-ARGUMENTS: 
+|	$formattedArgs
+|	$formattedMods
+|	$formattedServerMods
+|---------------------------------------------------------
+"
 
 }
 
@@ -290,5 +294,10 @@ setupLaunchParameters "$@"
 
 [[ "$requestedKillProcess" = true ]] && killProcess
 
-[[ $verbosity -ge 2 ]] && printFunctionBody wStart "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath"
+[[ $verbosity -ge 2 ]] && formattedFunction=$(printFunctionBody wStart "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath")
 wStart "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath"
+
+printf "\
+| $formattedFunction
+\\---------------------------------------------------------
+"

@@ -1,0 +1,229 @@
+#!/bin/bash
+
+source DayZLauncherUtil
+
+MIKERO_DIR="C:\Program Files (x86)\Mikero"
+PBO_PROJECT_EXE="$MIKERO_DIR\DePboTools\bin\pboProject.exe"
+
+MOD_SRC_DIR=""
+MOD_BUILD_DIR=""
+WORKSPACE=""
+APP_ID=""
+ISLANDS=""
+SIGN=
+
+launchArguments=""
+
+verbosity=0
+
+function printUsage() {
+	printf "
+- Usage
+	DayZModBuilder [-hvwFGDZOCPkRS] [-m modSource] [-M modDestination] [-K keyFile] [-W workspace] [-A appID] [-E engine] [-I islands] [-X pboProjectExe]
+	
+- Options
+	-h, --help                             Show this help.
+	-v, --verbose                          Be verbose. Can be repeated for more verbosity.
+	-w, --warnings                         Show warnings as errors.
+	-F, --rebuild-required                 Rebuild cfgRequiredAddons.
+	-G, --check-reference                  File reference checks.
+	-D, --datestamps                       Use datestamps.
+	-Z, --compress                         Enable compression.
+	-O, --obfuscate                        Obfuscate.
+	-C, --clean                            Erases project's temp space.
+	-P, --no-pause                         Do not pause.
+
+	-m, --mod-source <source>              Mod folder to build.
+	-M, --mod-destination <destination>    Mod built destination.
+
+	-k, --sign                             Sign these pbos using existing privatekey.
+	-K, --sign-with <key>                  Sign pbo's using new privatekey.
+
+	-R, --restore-options                  Restore options.
+	-S, --stop                             Stop processing.
+	
+	-A, --app-id <app-id>                  Appid for dlcs.
+	-W, --workspace <workspace>            
+	-E, --engine <arrowhead|arma|dayz>     Selects engine.
+	-I, --islands <islands>              
+
+	-X, --exe                              Selects pboProject.exe
+"
+}
+
+function setupLaunchParameters() {
+	shortOpt="hvwm:M:W:FGDZOCA:E:PI:kK:RSX:"
+	longOpt="help,verbose,warnings,mod-source:,mod-destination:,workspace:,rebuild-required,check-reference,datestamps,compress,obfuscate,clean,app-id:,engine:,no-pause,islands:,sign,sign-with:,restore-options,stop,exe:"
+
+	PARSED_ARGUMENTS=$(getopt -n DayZModBuilder -o ${shortOpt} --long ${longOpt} -- "$@")
+	if [ "$?" != "0" ]; then
+		printUsage
+		exit 1
+	fi
+
+	eval set -- "$PARSED_ARGUMENTS"
+
+	while true; do
+		case $1 in
+		-h | --help)
+			printUsage
+			exit 1
+			;;
+		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+		-w | --warnings) addLaunchArguments "+W" ;;
+		-m | --mod-source)
+			setModSource "$2"
+			shift
+			;;
+		-M | --mod-destination)
+			setModDestination "$2"
+			shift
+			;;
+		-W | --workspace)
+			setWorkspace "$2"
+			shift
+			;;
+		-F | --rebuild-required) addLaunchArguments "+F" ;;
+		-G | --check-reference) addLaunchArguments "+G" ;;
+		-D | --datestamps) : ;; # addLaunchArguments "+D" ;;
+		-Z | --compress) addLaunchArguments "+Z" ;;
+		-O | --obfuscate) addLaunchArguments "+O" ;;
+		-C | --clean) addLaunchArguments "+C" ;;
+		-A | --app-id)
+			setAppID "$2"
+			shift
+			;;
+		-E | --engine)
+			setEngine "$2"
+			shift
+			;;
+		-P | --no-pause) addLaunchArguments "-P" ;;
+		-I | --islands)
+			setIslands "$2"
+			shift
+			;;
+		-k | --sign) setKey "" ;;
+		-K | --sign-with)
+			setKey "$2"
+			shift
+			;;
+		-R | --restore-options) addLaunchArguments "+R" ;;
+		-S | --stop) addLaunchArguments "+Stop" ;;
+		-X | --exe)
+			PBO_PROJECT_EXE="$2"
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			echo "Invalid option: $1"
+			printUsage
+			exit 1
+			;;
+		esac
+		shift #go to next arg
+	done
+
+	[[ ! -z "$ENGINE" ]] && argEngine="+E=$ENGINE"
+	[[ ! -z "$WORKSPACE" ]] && argWorkspace="-Workspace=$WORKSPACE"
+	[[ ! -z "$APP_ID" ]] && argAppID="+AppID=$APP_ID"
+	[[ ! -z "$ISLANDS" ]] && argIslands="-Islands=$ISLANDS"
+	[[ ! -z "$MOD_BUILD_DIR" ]] && argMobBuildDir="+Mod=$MOD_BUILD_DIR"
+	if [ "$SIGN" = true ]; then
+		argKey="+Key"
+		[[ ! -z "$KEY" ]] && argKey="+Key=$KEY"
+	fi
+
+}
+
+function addLaunchArguments() {
+	[[ ! -z "$1" ]] && launchArguments="$launchArguments $1"
+}
+
+function setModSource() {
+	# @todo check for mod source
+	[[ ! -z "$1" ]] && MOD_SRC_DIR="$1"
+}
+
+function setModDestination() {
+	# @todo check for mod destination
+	[[ ! -z "$1" ]] && MOD_BUILD_DIR="$1"
+}
+
+function setWorkspace() {
+	# @todo check for workspace
+	[[ ! -z "$1" ]] && WORKSPACE="$1"
+}
+
+function setAppID() {
+	# @todo check for app id
+	[[ ! -z "$1" ]] && APP_ID="$1"
+}
+
+function setEngine() {
+	# @todo check for engine
+	case "${1,,}" in
+	arrowhead) ENGINE="Arrowhead" ;;
+	a | arma | arma3) ENGINE="arma3" ;;
+	d | dz | dayz) ENGINE="dayz" ;;
+	*)
+		echo "Engine not available!"
+		ENGINE=""
+		exit 2
+		;;
+	esac
+}
+
+function setIslands() {
+	# @todo check for islands
+	[[ ! -z "$1" ]] && ISLANDS="$1"
+}
+
+function setKey() {
+	# @todo check for key
+	SIGN=true
+	[[ ! -z "$1" ]] && KEY="$1"
+}
+
+#############################################
+# MAIN
+#############################################
+setupLaunchParameters "$@"
+if [ -z "$MOD_SRC_DIR" ]; then
+	echo "A mod source directory MUST be defined!"
+	printUsage
+	exit 1
+fi
+
+	printf "
+/=========================================================
+|                    Building MOD
+|
+|-EXE: 
+|	$PBO_PROJECT_EXE
+|
+|-ARGUMENTS:
+|	$launchArguments $argEngine $argKey
+|
+|-MOD SOURCES:
+|	$MOD_SRC_DIR
+|
+|-MOD DESTINATION:
+|	$MOD_BUILD_DIR
+|
+|---------------------------------------------------------
+"
+
+
+[[ $verbosity -ge 2 ]] && printFunctionBody wMkdir "$MOD_BUILD_DIR"
+[[ ! -z "$MOD_BUILD_DIR" ]] && wMkdir "$MOD_BUILD_DIR"
+
+[[ $verbosity -ge 2 ]] && formattedFunction=$(echo cmd.exe /c start "" "$PBO_PROJECT_EXE" $launchArguments "$argEngine" "$MOD_SRC_DIR" "$argMobBuildDir" "$argKey")
+cmd.exe /c start "" "$PBO_PROJECT_EXE" $launchArguments "$argEngine" "$MOD_SRC_DIR" "$argMobBuildDir" "$argKey"
+
+printf "\
+| $formattedFunction
+\\---------------------------------------------------------
+"

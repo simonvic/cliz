@@ -75,6 +75,9 @@ function killProcess() {
 		[[ $verbosity -ge 1 ]] && echo "Killing $clientProcName"
 		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$clientProcName"
 		wTaskKill "$clientProcName"
+		[[ $verbosity -ge 1 ]] && printf "
+|---------------------------------------------------------
+"
 	fi
 
 	# if diagnostic process is alive, kill it
@@ -82,11 +85,11 @@ function killProcess() {
 		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
 		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
 		wTaskKill "$diagProcName"
+		[[ $verbosity -ge 1 ]] && printf "
+|---------------------------------------------------------
+"
 	fi
 
-	[[ $verbosity -ge 1 ]] && echo "
----------------------------------------------------------
-"
 }
 
 function addLaunchArguments() {
@@ -127,12 +130,12 @@ function setMission() {
 
 function setProfileDir() {
 	#@todo check profile dir
-	PROFILE_DIR="$2"
+	PROFILE_DIR="$1"
 }
 
 function setWorld() {
 	# @todo check world
-	WORLD="$2"
+	WORLD="$1"
 }
 
 function setupLaunchParameters() {
@@ -223,26 +226,29 @@ function setupLaunchParameters() {
 }
 
 function printLaunchParameters() {
-	printf "
-=========================================================	
-                Launching CLIENT
----------------------------------------------------------
-EXE: 
-	$launchExe 
-
-ARGUMENTS: "
 	# Print launch arguments vertically
-	printf "\
-$launchArguments $argName $argAddress $argPassword
-$argMission 
-$argProfile
-$argWorld 
-" | sed "s/-/\n\t-/g"
+	local formattedArgs=$(printf "
+|$launchArguments $argName $argAddress $argPassword
+|$argMission 
+|$argProfile
+|$argWorld" | sed "s/-/\n|\t-/g")
 
 	# Print mods vertically
-	printf "	${argMods//;/\\n\\t\\t}
+	local formattedMods=$(printf "
+|	${argMods//;/\\n|\\t\\t}" | sed "s/=/=\n|\t\t/g")
 
-" | sed "s|=|=\n\t\t|g"
+	printf "
+/=========================================================
+|                Launching CLIENT
+|
+|-EXE: 
+|	$launchExe 
+|
+|-ARGUMENTS: 
+|	$formattedArgs
+|	$formattedMods
+|---------------------------------------------------------
+"
 
 }
 
@@ -255,5 +261,10 @@ setupLaunchParameters "$@"
 
 [[ "$requestedKillProcess" = true ]] && killProcess
 
-[[ $verbosity -ge 2 ]] && printFunctionBody wStart "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld"
+[[ $verbosity -ge 2 ]] && formattedFunction=$(printFunctionBody wStart "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld")
 wStart "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld"
+
+printf "\
+| $formattedFunction
+\\---------------------------------------------------------
+"
