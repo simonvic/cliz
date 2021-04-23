@@ -110,6 +110,44 @@ It is meant to be used in a [WSL](https://docs.microsoft.com/en-us/windows/wsl/i
 
 ---
 <br>
+<h2 align="center"> DayZ Mod Builder</h2>
+
+```
+- Usage
+	DayZModBuilder [-hvwFGDZOCPkRS] [-m modSource] [-M modDestination] [-K keyFile] [-W workspace] [-A appID] [-E engine] [-I islands] [-X pboProjectExe]
+	
+- Options
+	-h, --help                             Show this help.
+	-v, --verbose                          Be verbose. Can be repeated for more verbosity.
+	-w, --warnings                         Show warnings as errors.
+	-F, --rebuild-required                 Rebuild cfgRequiredAddons.
+	-G, --check-reference                  File reference checks.
+	-D, --datestamps                       Use datestamps.
+	-Z, --compress                         Enable compression.
+	-O, --obfuscate                        Obfuscate.
+	-C, --clean                            Erases project's temp space.
+	-P, --no-pause                         Do not pause.
+
+	-m, --mod-source <source>              Mod folder to build.
+	-M, --mod-destination <destination>    Mod built destination.
+
+	-k, --sign                             Sign these pbos using existing privatekey.
+	-K, --sign-with <key>                  Sign pbo's using new privatekey.
+
+	-R, --restore-options                  Restore options.
+	-S, --stop                             Stop processing.
+	
+	-A, --app-id <app-id>                  Appid for dlcs.
+	-W, --workspace <workspace>            
+	-E, --engine <arrowhead|arma|dayz>     Selects engine.
+	-I, --islands <islands>              
+
+	-X, --exe                              Selects pboProject.exe
+
+```
+
+---
+<br>
 <h2 align="center"> DayZ Workbench launcher</h2>
 
 ```
