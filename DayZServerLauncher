@@ -158,7 +158,7 @@ function setProfileDir() {
 	SERVER_PROFILE_DIR="$1"
 }
 
-function setProfileDir() {
+function setBEPath() {
 	#@todo check be path
 	SERVER_BATTLEYE_PATH="$1"
 }
