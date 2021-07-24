@@ -1,0 +1,309 @@
+#!/bin/bash
+
+source DayZLauncherUtil
+
+DAYZ_TOOLS="S:\Games\SteamLibrary\steamapps\common\DayZ Tools"
+ADDON_BUILDER_EXE="$DAYZ_TOOLS\Bin\AddonBuilder\AddonBuilder.exe"
+
+MOD_SRC_DIR=""
+MOD_BUILD_DIR=""
+
+launchArguments=()
+
+verbosity=0
+
+function printUsage() {
+	printf "
+- Usage
+	DayZModBuilder [-hvPcbl] [-s sourcePath] [-d destinationPath] [-t tempFolderPath] [-p addonPrefix] [-P projectPath] [-K privateKey] [-i filesToInclude] [-e filesToExclude] [-V pboVersion] [-B binarize.exe] [-C cfgConvert.exe] [-F filebank.exe] [-D dssignfile.exe] [-T dayzToolsPath] 
+	
+- Options
+	-h, --help                             Show this help.
+	-v, --verbose                          Be verbose. Can be repeated for more verbosity.
+
+	-P, --packonly                         Only stores the folder to a PBO. Does NOT binarize 
+	                                        files. (Binarization is default behaviour.)
+
+	-c, --clear                            Before binarizing, the content of subfolder for the 
+	                                        current project is deleted.
+
+	-t, --temp <folder>                    Path for the folder which stores binarized files, 
+	                                        default destination is temp in Windows, if no 
+	                                        value is present then the last folder is used, 
+	                                        if you use the same folder, the next time you 
+	                                        binarize the same addon it will take less time.
+
+	-p, --prefix <prefix>                  Relative path to files used in addon, if not present
+	                                        then this value is calculated automatically.
+
+	-P, --project-path <path>              Path to folder where project starts from, if you are 
+	                                        packing only the path of a project. It is recommended
+	                                        to use the same as the source path or to define it
+	                                        accordingly to the need. 
+	                                        In case it is defined to P:, Binarize will process the
+	                                        entire P: drive which takes time.
+
+	-K, --sign-with <key>                  Private BI key (*.BIPRIVATEKEY) file that will be used
+	                                        to sign the addon. Addons created with a signature can 
+	                                        be added to secure servers.
+
+	-i, --include <files>                  Directly copy matched files to PBO.
+	                                        Absolute path to file with wildcard patterns.
+	                                        Separator is ';' and ','.
+
+	-e, --exclude <files>                  Absolute or relative file path. Contains patterns of
+	                                        files which are excluded from final pbo. Look for
+	                                        'exclude.lst' file in DayZTools install dir for
+	                                        an example of exclude file content.
+
+	-V, --pbo-version <version>            PBO version for FileBank (-property version=<version>)
+
+	-B, --binarize-exe <exe>               Path to Binarize tool. Default Binarize tool is used
+	                                        if not specified.
+	
+	-C, --cfgConvert-exe <exe>             Path to cfg convert tool. Default is used if not 
+	                                        specified.
+
+	-F, --filebank-exe <exe>               Path to cfg filebank tool. Default is used if not 
+	                                        specified.
+
+	-D, --dssignfile-exe <exe>             Path to cfg DssignFile  tool. Default is used if not 
+	                                        specified.
+
+	-T, --dayz-tools <folder>              Specifies the path to DayZ Tools directory with other 
+	                                        tools (Binarize, CfgConvert, Filebank, ...). By default 
+	                                        is the directory retrieved from Steam client.
+
+	
+"
+}
+
+function setupLaunchParameters() {
+	shortOpt="hvocbls:d:t:p:P:K:i:e:V:B:C:F:D:T:"
+	longOpt="help,verbose,only-pack,clear-temp,binarize-all-textures,extended-logs,source:,destination:,temp-folder:,prefix:,project-path:,sign-with:,include:,exclude:,pbo-version:,binarize-exe:,cfgConvert-exe:,filebank-exe:,dssignfile-exe:,dayz-tools:"
+
+	PARSED_ARGUMENTS=$(getopt -n DayZModBuilder -o ${shortOpt} --long ${longOpt} -- "$@")
+	if [ "$?" != "0" ]; then
+		printUsage
+		exit 1
+	fi
+
+	eval set -- "$PARSED_ARGUMENTS"
+
+	while true; do
+		case $1 in
+		-h | --help)
+			printUsage
+			exit 1
+			;;
+		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+
+		-o | --only-pack) addLaunchArguments "-packonly" ;;
+		-c | --clear-temp) addLaunchArguments "-clear" ;;
+		-b | --binarize-all-textures) addLaunchArguments "-binarizeAllTextures" ;;
+		-l | --extended-logs) addLaunchArguments "-binarizeFullLogs" ;;
+		-s | --source)
+			setModSource "$2"
+			shift
+			;;
+		-d | --destination)
+			setModDestination "$2"
+			shift
+			;;
+		-t | --temp-folder)
+			setTempFolder "$2"
+			shift
+			;;
+		-p | --prefix)
+			setPrefix "$2"
+			shift
+			;;
+		-P | --project-path)
+			setProjectPath "$2"
+			shift
+			;;
+		-K | --sign-with)
+			setKey "$2"
+			shift
+			;;
+		-i | --include)
+			includeFile "$2"
+			shift
+			;;
+		-e | --exclude)
+			excludeFile "$2"
+			shift
+			;;
+		-V | --pbo-version)
+			setPBOVersion "$2"
+			shift
+			;;
+		-B | --binarize-exe)
+			setBinarizePath "$2"
+			shift
+			;;
+		-C | --cfgConvert-exe)
+			setCfgConvertPath "$2"
+			shift
+			;;
+		-F | --filebank-exe)
+			setFilebankPath "$2"
+			shift
+			;;
+		-D | --dssignfile-exe)
+			setDssignfilePath "$2"
+			shift
+			;;
+		-T | --dayz-tools)
+			setDayZToolsPath "$2"
+			shift
+			;;
+
+		--)
+			shift
+			break
+			;;
+		*)
+			echo "Invalid option: $1"
+			printUsage
+			exit 1
+			;;
+		esac
+		shift #go to next arg
+	done
+
+	[[ ! -z "$TEMP_DIR" ]] && addLaunchArguments "-temp=$TEMP_DIR"
+	[[ ! -z "$PREFIX" ]] && addLaunchArguments "-prefix=$PREFIX"
+	[[ ! -z "$PROJECT_DIR" ]] && addLaunchArguments "-project=$PROJECT_DIR"
+	[[ ! -z "$KEY" ]] && addLaunchArguments "-sign=$KEY"
+	[[ ! -z "$INCLUDED_FILES" ]] && addLaunchArguments "-include=$INCLUDED_FILES"
+	[[ ! -z "$EXCLUDED_FILES" ]] && addLaunchArguments "-exclude=$EXCLUDED_FILES"
+	[[ ! -z "$PBO_VERSION" ]] && addLaunchArguments "-pboversion=$PBO_VERSION"
+	[[ ! -z "$BINARIZE_EXE" ]] && addLaunchArguments "-binarize=$BINARIZE_EXE"
+	[[ ! -z "$CFCCONVERT_EXE" ]] && addLaunchArguments "-cfgconvert=$CFCCONVERT_EXE"
+	[[ ! -z "$FILEBANK_EXE" ]] && addLaunchArguments "-filebank=$FILEBANK_EXE"
+	[[ ! -z "$DSSIGNFILE_EXE" ]] && addLaunchArguments "-dssignfile=$DSSIGNFILE_EXE"
+	# [[ ! -z "$DAYZ_TOOLS" ]] && addLaunchArguments "-toolsDirectory=\"$DAYZ_TOOLS\""
+
+}
+
+function addLaunchArguments() {
+	if [ ! -z "$1" ]; then
+		launchArguments+=("$1")
+	fi
+}
+
+function setModSource() {
+	# @todo check for mod source
+	[[ ! -z "$1" ]] && MOD_SRC_DIR="$1"
+}
+
+function setModDestination() {
+	# @todo check for mod destination
+	[[ ! -z "$1" ]] && MOD_BUILD_DIR="$1"
+}
+
+function setTempFolder() {
+	[[ ! -z "$1" ]] && TEMP_DIR="$1"
+}
+
+function setPrefix() {
+	[[ ! -z "$1" ]] && PREFIX="$1"
+}
+
+function setProjectPath() {
+	[[ ! -z "$1" ]] && PROJECT_DIR="$1"
+}
+
+function setKey() {
+	[[ ! -z "$1" ]] && KEY="$1"
+}
+
+function includeFile() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$INCLUDED_FILES" ]; then
+			INCLUDED_FILES="$INCLUDED_FILES;$1"
+		else
+			INCLUDED_FILES="$1"
+		fi
+	fi
+}
+
+function excludeFile() {
+	if [ ! -z "$1" ]; then
+		if [ ! -z "$EXCLUDED_FILES" ]; then
+			EXCLUDED_FILES="$EXCLUDED_FILES;$1"
+		else
+			EXCLUDED_FILES="$1"
+		fi
+	fi
+}
+
+function setPBOVersion() {
+	[[ ! -z "$1" ]] && PBO_VERSION="$1"
+}
+
+function setBinarizePath() {
+	[[ ! -z "$1" ]] && BINARIZE_EXE="$1"
+}
+
+function setCfgConvertPath() {
+	[[ ! -z "$1" ]] && CFCCONVERT_EXE="$1"
+}
+
+function setFilebankPath() {
+	[[ ! -z "$1" ]] && FILEBANK_EXE="$1"
+}
+
+function setDssignfilePath() {
+	[[ ! -z "$1" ]] && DSSIGNFILE_EXE="$1"
+}
+
+function setDayZToolsPath() {
+	if [ ! -z "$1" ]; then
+		DAYZ_TOOLS="$1"
+		ADDON_BUILDER_EXE="$DAYZ_TOOLS\Bin\AddonBuilder\AddonBuilder.exe"
+	fi
+}
+
+function printLaunchParameters() {
+	# Print launch arguments vertically
+	local formattedArgs=$(echo "
+|${launchArguments[*]} " | sed "s/-/\n|\t-/g" | sed "/| /d")
+
+	echo "
+/=========================================================
+|                Building mod
+|
+|-EXE: 
+|	$ADDON_BUILDER_EXE 
+|
+|-ARGUMENTS: 
+|	$formattedArgs
+|---------------------------------------------------------
+"
+
+}
+
+#############################################
+# MAIN
+#############################################
+
+setupLaunchParameters "$@"
+
+if [ -z "$MOD_SRC_DIR" ]; then
+	printUsage
+	echo "A mod source directory MUST be defined!"
+	exit 1
+fi
+
+if [ -z "$MOD_BUILD_DIR" ]; then
+	printUsage
+	echo "A mod destination directory MUST be defined!"
+	exit 1
+fi
+
+[[ $verbosity -ge 1 ]] && printLaunchParameters
+# [[ $verbosity -ge 2 ]] && $(echo cmd.exe /c start "\"\"" "\"$ADDON_BUILDER_EXE\"" "\"$MOD_SRC_DIR\"" "\"$MOD_BUILD_DIR\"" $launchArguments)
+# cmd.exe "/c" "$ADDON_BUILDER_EXE" "$MOD_SRC_DIR" "$MOD_BUILD_DIR" ${launchArguments[*]}
+# cmd.exe /c "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$MOD_SRC_DIR" "$MOD_BUILD_DIR" ${launchArguments[*]}

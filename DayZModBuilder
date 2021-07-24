@@ -221,9 +221,11 @@ fi
 [[ ! -z "$MOD_BUILD_DIR" ]] && wMkdir "$MOD_BUILD_DIR"
 
 [[ $verbosity -ge 2 ]] && formattedFunction=$(echo cmd.exe /c start "" "$PBO_PROJECT_EXE" $launchArguments "$argEngine" "$MOD_SRC_DIR" "$argMobBuildDir" "$argKey")
-cmd.exe /c start "" "$PBO_PROJECT_EXE" $launchArguments "$argEngine" "$MOD_SRC_DIR" "$argMobBuildDir" "$argKey"
 
 printf "\
 | $formattedFunction
 \\---------------------------------------------------------
 "
+
+cmd.exe /c "$PBO_PROJECT_EXE" $launchArguments "$argEngine" "$MOD_SRC_DIR" "$argMobBuildDir" "$argKey"
+
