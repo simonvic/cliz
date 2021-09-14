@@ -9,23 +9,30 @@ MOD_SRC_DIR=""
 MOD_BUILD_DIR=""
 
 launchArguments=()
+declare -A launchValuedArguments
 
 verbosity=0
 
 function printUsage() {
 	printf "
 - Usage
-	DayZModBuilder [-hvPcbl] [-s sourcePath] [-d destinationPath] [-t tempFolderPath] [-p addonPrefix] [-P projectPath] [-K privateKey] [-i filesToInclude] [-e filesToExclude] [-V pboVersion] [-B binarize.exe] [-C cfgConvert.exe] [-F filebank.exe] [-D dssignfile.exe] [-T dayzToolsPath] 
+	DayZModBuilder [-hvocbl] [-s sourcePath] [-d destinationPath] [-t tempFolderPath] [-p addonPrefix] [-P projectPath] [-K privateKey] [-i filesToInclude] [-e filesToExclude] [-V pboVersion] [-B binarize.exe] [-C cfgConvert.exe] [-F filebank.exe] [-D dssignfile.exe] [-T dayzToolsPath] 
 	
 - Options
 	-h, --help                             Show this help.
 	-v, --verbose                          Be verbose. Can be repeated for more verbosity.
 
-	-P, --packonly                         Only stores the folder to a PBO. Does NOT binarize 
+	-o, --only-pack                        Only stores the folder to a PBO. Does NOT binarize 
 	                                        files. (Binarization is default behaviour.)
 
-	-c, --clear                            Before binarizing, the content of subfolder for the 
+	-c, --clear-temp                       Before binarizing, the content of subfolder for the 
 	                                        current project is deleted.
+
+	-b, -binarize-all-textures             Binarize all .TGA, .PNG textures even if they are not
+	                                        referenced by any model or included in
+	                                        any textures.lst file.
+
+	-l, --extended-logs                    Enable extended logging	
 
 	-t, --temp <folder>                    Path for the folder which stores binarized files, 
 	                                        default destination is temp in Windows, if no 
@@ -96,66 +103,67 @@ function setupLaunchParameters() {
 			printUsage
 			exit 1
 			;;
-		-v | --verbose) verbosity=$((verbosity + 1)) ;;
+		-v | --verbose) ((verbosity++)) ;;
 
-		-o | --only-pack) addLaunchArguments "-packonly" ;;
-		-c | --clear-temp) addLaunchArguments "-clear" ;;
-		-b | --binarize-all-textures) addLaunchArguments "-binarizeAllTextures" ;;
-		-l | --extended-logs) addLaunchArguments "-binarizeFullLogs" ;;
+		-o | --only-pack) launchArguments+=("-packonly") ;;
+		-c | --clear-temp) launchArguments+=("-clear") ;;
+		-b | --binarize-all-textures) launchArguments+=("-binarizeAllTextures") ;;
+		-l | --extended-logs) launchArguments+=("-binarizeFullLogs") ;;
 		-s | --source)
-			setModSource "$2"
+			MOD_SRC_DIR="$2"
 			shift
 			;;
 		-d | --destination)
-			setModDestination "$2"
+			MOD_BUILD_DIR="$2"
 			shift
 			;;
 		-t | --temp-folder)
-			setTempFolder "$2"
+			launchValuedArguments["-temp"]="$2"
 			shift
 			;;
 		-p | --prefix)
-			setPrefix "$2"
+			launchValuedArguments["-prefix"]="$2"
 			shift
 			;;
 		-P | --project-path)
-			setProjectPath "$2"
+			launchValuedArguments["-project"]="$2"
 			shift
 			;;
 		-K | --sign-with)
-			setKey "$2"
+			launchValuedArguments["-sign"]="$2"
 			shift
 			;;
 		-i | --include)
-			includeFile "$2"
+			launchValuedArguments["-include"]="$2"
 			shift
 			;;
 		-e | --exclude)
-			excludeFile "$2"
+			echo "WARNING: Exclude command is broken. Ignoring it. Edit the default exclude.lst file to exclude files"
+			launchValuedArguments["-exclude"]="$2"
 			shift
 			;;
 		-V | --pbo-version)
-			setPBOVersion "$2"
+			launchValuedArguments["-pboversion"]="$2"
 			shift
 			;;
 		-B | --binarize-exe)
-			setBinarizePath "$2"
+			launchValuedArguments["-binarize"]="$2"
 			shift
 			;;
 		-C | --cfgConvert-exe)
-			setCfgConvertPath "$2"
+			launchValuedArguments["-cfgconvert"]="$2"
 			shift
 			;;
 		-F | --filebank-exe)
-			setFilebankPath "$2"
+			launchValuedArguments["-filebank"]="$2"
 			shift
 			;;
 		-D | --dssignfile-exe)
-			setDssignfilePath "$2"
+			launchValuedArguments["-dssignfile"]="$2"
 			shift
 			;;
 		-T | --dayz-tools)
-			setDayZToolsPath "$2"
+			launchValuedArguments["-toolsDirectory"]="$2"
 			shift
 			;;
 
@@ -171,139 +179,71 @@ function setupLaunchParameters() {
 		esac
 		shift #go to next arg
 	done
-
-	[[ ! -z "$TEMP_DIR" ]] && addLaunchArguments "-temp=$TEMP_DIR"
-	[[ ! -z "$PREFIX" ]] && addLaunchArguments "-prefix=$PREFIX"
-	[[ ! -z "$PROJECT_DIR" ]] && addLaunchArguments "-project=$PROJECT_DIR"
-	[[ ! -z "$KEY" ]] && addLaunchArguments "-sign=$KEY"
-	[[ ! -z "$INCLUDED_FILES" ]] && addLaunchArguments "-include=$INCLUDED_FILES"
-	[[ ! -z "$EXCLUDED_FILES" ]] && addLaunchArguments "-exclude=$EXCLUDED_FILES"
-	[[ ! -z "$PBO_VERSION" ]] && addLaunchArguments "-pboversion=$PBO_VERSION"
-	[[ ! -z "$BINARIZE_EXE" ]] && addLaunchArguments "-binarize=$BINARIZE_EXE"
-	[[ ! -z "$CFCCONVERT_EXE" ]] && addLaunchArguments "-cfgconvert=$CFCCONVERT_EXE"
-	[[ ! -z "$FILEBANK_EXE" ]] && addLaunchArguments "-filebank=$FILEBANK_EXE"
-	[[ ! -z "$DSSIGNFILE_EXE" ]] && addLaunchArguments "-dssignfile=$DSSIGNFILE_EXE"
-	# [[ ! -z "$DAYZ_TOOLS" ]] && addLaunchArguments "-toolsDirectory=\"$DAYZ_TOOLS\""
-
-}
-
-function addLaunchArguments() {
-	if [ ! -z "$1" ]; then
-		launchArguments+=("$1")
-	fi
-}
-
-function setModSource() {
-	# @todo check for mod source
-	[[ ! -z "$1" ]] && MOD_SRC_DIR="$1"
-}
-
-function setModDestination() {
-	# @todo check for mod destination
-	[[ ! -z "$1" ]] && MOD_BUILD_DIR="$1"
-}
-
-function setTempFolder() {
-	[[ ! -z "$1" ]] && TEMP_DIR="$1"
-}
-
-function setPrefix() {
-	[[ ! -z "$1" ]] && PREFIX="$1"
-}
-
-function setProjectPath() {
-	[[ ! -z "$1" ]] && PROJECT_DIR="$1"
-}
-
-function setKey() {
-	[[ ! -z "$1" ]] && KEY="$1"
-}
-
-function includeFile() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$INCLUDED_FILES" ]; then
-			INCLUDED_FILES="$INCLUDED_FILES;$1"
-		else
-			INCLUDED_FILES="$1"
-		fi
-	fi
-}
-
-function excludeFile() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$EXCLUDED_FILES" ]; then
-			EXCLUDED_FILES="$EXCLUDED_FILES;$1"
-		else
-			EXCLUDED_FILES="$1"
-		fi
-	fi
-}
-
-function setPBOVersion() {
-	[[ ! -z "$1" ]] && PBO_VERSION="$1"
-}
-
-function setBinarizePath() {
-	[[ ! -z "$1" ]] && BINARIZE_EXE="$1"
-}
-
-function setCfgConvertPath() {
-	[[ ! -z "$1" ]] && CFCCONVERT_EXE="$1"
-}
-
-function setFilebankPath() {
-	[[ ! -z "$1" ]] && FILEBANK_EXE="$1"
-}
-
-function setDssignfilePath() {
-	[[ ! -z "$1" ]] && DSSIGNFILE_EXE="$1"
-}
-
-function setDayZToolsPath() {
-	if [ ! -z "$1" ]; then
-		DAYZ_TOOLS="$1"
-		ADDON_BUILDER_EXE="$DAYZ_TOOLS\Bin\AddonBuilder\AddonBuilder.exe"
-	fi
 }
 
 function printLaunchParameters() {
 	# Print launch arguments vertically
-	local formattedArgs=$(echo "
-|${launchArguments[*]} " | sed "s/-/\n|\t-/g" | sed "/| /d")
+	local formattedArgs=$(echo "${launchArguments[*]} " | sed "s/-/\n|\t-/g" | sed "/| /d")
 
-	echo "
+	echo "\
 /=========================================================
 |                Building mod
 |
-|-EXE: 
-|	$ADDON_BUILDER_EXE 
+|-EXE: $ADDON_BUILDER_EXE 
 |
-|-ARGUMENTS: 
-|	$formattedArgs
-|---------------------------------------------------------
-"
+|-MOD SOURCE:      ${MOD_SRC_DIR}
+|-MOD DESTINATION: ${MOD_BUILD_DIR}
+|
+|-ARGUMENTS: $formattedArgs"
+	for arg in "${!launchValuedArguments[@]}"; do
+		echo "\
+|	$arg = ${launchValuedArguments[$arg]}"
+	done
+}
 
+function prepareValuedArguments() {
+	local valuedArgs=()
+	for arg in "${!launchValuedArguments[@]}"; do
+		valuedArgs+=("$arg=${launchValuedArguments[$arg]}")
+	done
+	echo ${valuedArgs[*]}
+}
+
+function startAddonBuilderGUI() {
+	cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}"
+}
+
+function startAddonBuild() {
+	cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$MOD_SRC_DIR" "$MOD_BUILD_DIR" ${launchArguments[*]} $(prepareValuedArguments)
 }
 
 #############################################
 # MAIN
-#############################################
+setupLaunchParameters $@
 
-setupLaunchParameters "$@"
-
-if [ -z "$MOD_SRC_DIR" ]; then
-	printUsage
-	echo "A mod source directory MUST be defined!"
+# Launche GUI
+if [ -z "$MOD_SRC_DIR" ] && [ -z "$MOD_BUILD_DIR" ] && [ "${#launchArguments[@]}" -eq 0 ] && [ "${#launchValuedArguments[@]}" -eq 0 ]; then
+	[[ $verbosity -ge 1 ]] && echo "No parameters specified, launching AddonBuilder GUI"
+	case $verbosity in
+	3) startAddonBuilderGUI ;;
+	2) startAddonBuilderGUI >/dev/null ;;
+	1 | 0) startAddonBuilderGUI >/dev/null 2>/dev/null ;;
+	esac
 	exit 1
 fi
 
-if [ -z "$MOD_BUILD_DIR" ]; then
-	printUsage
-	echo "A mod destination directory MUST be defined!"
-	exit 1
-fi
+: ${MOD_SRC_DIR:?"A mod source directory MUST be defined!"}
+: ${MOD_BUILD_DIR:?"A mod destination directory MUST be defined!"}
 
 [[ $verbosity -ge 1 ]] && printLaunchParameters
-# [[ $verbosity -ge 2 ]] && $(echo cmd.exe /c start "\"\"" "\"$ADDON_BUILDER_EXE\"" "\"$MOD_SRC_DIR\"" "\"$MOD_BUILD_DIR\"" $launchArguments)
-# cmd.exe "/c" "$ADDON_BUILDER_EXE" "$MOD_SRC_DIR" "$MOD_BUILD_DIR" ${launchArguments[*]}
-# cmd.exe /c "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$MOD_SRC_DIR" "$MOD_BUILD_DIR" ${launchArguments[*]}
+[[ $verbosity -ge 2 ]] && echo "\
+|---------------------------------------------------------
+cmd.exe \"/c\" \"cd\" \"/D\" \"${ADDON_BUILDER_EXE%\\*}\" \"&&\" \".\\${ADDON_BUILDER_EXE##*\\}\" \"$MOD_SRC_DIR\" \"$MOD_BUILD_DIR\" ${launchArguments[*]} $(prepareValuedArguments)"
+[[ $verbosity -ge 1 ]] && echo "\
+|---------------------------------------------------------"
+
+case $verbosity in
+3) startAddonBuild ;;
+2) startAddonBuild >/dev/null ;;
+1 | 0) startAddonBuild >/dev/null 2>/dev/null ;;
+esac
