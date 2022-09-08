@@ -2,7 +2,8 @@
 
 source DayZLauncherUtil
 
-WORKBENCH_EXE="S:\Games\SteamLibrary\steamapps\common\DayZ Tools\Bin\Workbench\workbenchApp.exe"
+DAYZ_TOOLS="C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools"
+WORKBENCH_EXE="$DAYZ_TOOLS\Bin\Workbench\workbenchApp.exe"
 MODS=""
 
 verbosity=0
@@ -85,7 +86,8 @@ function addMod() {
 
 function launchWorkbench() {
 	# Don't ask me why... cd is needed
-	cmd.exe /c "cd" "/D" "${1}" "&&" "START" ".\\${2}" "${3}"
+	cmd.exe /c "START" "/D" "${1}" ".\\${2}" "${3}"
+	#cmd.exe /c "cd" "/D" "${1}" "&&" "START" ".\\${2}" "${3}"
 }
 
 setupLaunchParameters "$@"
