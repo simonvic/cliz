@@ -149,7 +149,7 @@ function setupLaunchParameters() {
 			;;
 		-e | --exclude)
 			echo "WARNING: Exclude command is broken. Ignoring it. Edit the default exclude.lst file to exclude files"
-			# launchValuedArguments["-exclude"]="$2"
+			#launchValuedArguments["-exclude"]="$2"
 			shift
 			;;
 		-V | --pbo-version)
@@ -235,9 +235,9 @@ function copyKey() {
 }
 
 function copyModDescriptor() {
-	local modDescriptor="$MOD_SRC_DIR\mod.cpp"
+	local modDescriptor="$MOD_SRC_DIR\mod.ini"
 	echo "Copying public key $modDescriptor -> $MOD_BUILD_DIR"
-	cmd.exe "/c" "copy" "$modDescriptor" "$MOD_BUILD_DIR"
+	cmd.exe "/c" "copy" "$modDescriptor" "$MOD_BUILD_DIR\mod.cpp"
 	#cmd.exe "/c" "IF" "EXIST" "$modDescriptor" "copy" "$modDescriptor" "$MOD_BUILD_DIR"
 }
 
