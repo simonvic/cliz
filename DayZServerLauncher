@@ -2,28 +2,30 @@
 
 source DayZLauncherUtil
 
-SERVER_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\DayZServer_x64.exe"
-DIAG_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"
-
-# ARGUMENTS FOR DAYZ EXE
-SERVER_CONFIG="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\serverDZ.cfg"
-SERVER_PROFILE_DIR="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\simonvicTestServer"
-SERVER_MISSION="C:\Program Files (x86)\Steam\steamapps\common\DayZServer\mpmissions\dayzOffline.chernarusplus"
-SERVER_PORT=2302
-MODS=""
-SERVER_SIDE_MODS=""
-SERVER_BATTLEYE_PATH=""
+DIR="C:\Program Files (x86)\Steam\steamapps\common\DayZServer"
+DIR_CLIENT="C:\Program Files (x86)\Steam\steamapps\common\DayZ"
+EXE="DayZ_x64.exe"
+EXE_DIAG="DayZDiag_x64.exe"
 
 ########################################################
 
+##
+# 0 = no output
+# 1 = mod list | windows output
+# 2 = mod list | windows output | arguments
+# 3 = mod list | windows output | arguments | executables
+# 4 = mod list | windows output | arguments | executables | final command 
 verbosity=0
-launchExe="$SERVER_EXE"
-launchArguments=""
+dir=$DIR
+exe=$EXE
+args=()
+mods=()
+serverMods=()
 
 function printUsage() {
 	printf "
 - Usage
-	DayZServerLauncher [-hvkdflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
+	DayZServerLauncher [-hvkdflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-D directory] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
 	
 - Options
 	-h, --help                        Show this help.
@@ -56,6 +58,7 @@ function printUsage() {
 	-L, --limit-fps <max fps>         Limits server FPS to specified value (current 
 	                                   max is 200) to lower CPU usage of low population servers.
 
+	-D, --dir <exe directory>         Selects where the executables are found
 	-X, --exe <exe file>              Selects what executable file to be used
 	-C, --config <config>             Selects the Server Config File.
 	-M, --mission <mission>           Selects what mission to use.
@@ -70,102 +73,46 @@ function printUsage() {
 "
 }
 
+##
+#	Kill all Dayz related processes (exe and diagnostic exe)
 function killProcess() {
 
-	local serverProcName="DayZServer_x64.exe"
-	local diagProcName="DayZDiag_x64.exe"
+	local serverProcName=$EXE
+	local diagProcName=$EXE_DIAG
 
 	# if server process is alive, kill it
 	if [ ! -z "$(wFindProcess $serverProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $serverProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$serverProcName"
+		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $serverProcName... "
 		wTaskKill "$serverProcName"
-		[[ $verbosity -ge 1 ]] && printf "
-|---------------------------------------------------------
-"
 	fi
 
 	# if diagnostic process is alive, kill it
 	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
+		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $diagProcName... "
 		wTaskKill "$diagProcName"
-		[[ $verbosity -ge 1 ]] && printf "
-|---------------------------------------------------------
-"
 	fi
+
 }
 
-function addLaunchArguments() {
-	if [ ! -z "$1" ]; then
-		launchArguments="$launchArguments $1"
-	fi
+
+##
+#	Use the diagnostic executable
+function useDiagExe() {
+	dir="$DIR_CLIENT"
+	exe="$EXE_DIAG"
+	args+=("-server")
 }
 
+##
+#	Specify to use file patching (diagnostic exe will be used)
 function useFilePatching() {
-	#grep server config
-	addLaunchArguments "-filePatching"
-}
-
-function useDiagnostic() {
-	launchExe=$DIAG_EXE
-	addLaunchArguments "-server"
-}
-
-function addMod() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$MODS" ]; then
-			MODS="$MODS;$1"
-		else
-			MODS="$1"
-		fi
-	fi
-}
-
-function addServerMod() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$SERVER_SIDE_MODS" ]; then
-			SERVER_SIDE_MODS="$SERVER_SIDE_MODS;$1"
-		else
-			SERVER_SIDE_MODS="$1"
-		fi
-	fi
-}
-
-function setServerPort() {
-	#@todo check port
-	SERVER_PORT="$1"
-}
-
-function setLaunchExe() {
-	#@todo check exe
-	launchExe="$1"
-}
-
-function setServerConfig() {
-	# @todo check config
-	# [[ -e "$1" ]] && : || echo "The config $1 doesn't exists or is not valid "
-	SERVER_CONFIG=$1
-}
-
-function setServerMission() {
-	#@todo check mission
-	SERVER_MISSION="$1"
-}
-
-function setProfileDir() {
-	#@todo check profile dir
-	SERVER_PROFILE_DIR="$1"
-}
-
-function setBEPath() {
-	#@todo check be path
-	SERVER_BATTLEYE_PATH="$1"
+	useDiagExe
+	args+=("-filePatching")
 }
 
 function setupLaunchParameters() {
-	shortOpt="hvkdflanFm:s:p:c:L:X:C:M:P:B:"
-	longOpt="help,verbose,kill,diagnostic,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,exe:,config:,mission:,profile-folder:,battleye-path:"
+	shortOpt="hvkdflanFm:s:p:c:L:D:X:C:M:P:B:"
+	longOpt="help,verbose,kill,diagnostic,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZServerLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -181,54 +128,25 @@ function setupLaunchParameters() {
 			printUsage
 			exit 1
 			;;
-		-v | --verbose) verbosity=$((verbosity + 1)) ;;
-		-k | --kill) requestedKillProcess=true ;;
-		-d | --diagnostic) useDiagnostic ;;
-		-f | --file-patching) useFilePatching ;;
-		-l | --do-logs) addLaunchArguments "-doLogs " ;;
-		-a | --admin-log) addLaunchArguments "-adminLog" ;;
-		-n | --net-log) addLaunchArguments "-netLog" ;;
-		-F | --freeze-check) addLaunchArguments "-freezeCheck" ;;
-		-m | --mods)
-			addMod "$2"
-			shift
-			;;
-		-s | --server-mods)
-			addServerMod "$2"
-			shift
-			;;
-		-p | --port)
-			setServerPort "$2"
-			shift
-			;;
-		-c | --cpu-count)
-			addLaunchArguments "-cpuCount=$2"
-			shift
-			;;
-		-L | --limit-fps)
-			addLaunchArguments "-limitFPS=$2"
-			shift
-			;;
-		-X | --exe)
-			setLaunchExe "$2"
-			shift
-			;;
-		-C | --config)
-			setServerConfig "$2"
-			shift
-			;;
-		-M | --mission)
-			setServerMission "$2"
-			shift
-			;;
-		-P | --profile-folder)
-			setProfileDir "$2"
-			shift
-			;;
-		-B | --battleye-path)
-			setBEPath "$2"
-			shift
-			;;
+		-v | --verbose)        ((verbosity++))                 ;;
+		-k | --kill)           requestedKillProcess=true       ;;
+		-d | --diagnostic)     useDiagExe                      ;;
+		-f | --file-patching)  useFilePatching                 ;;
+		-l | --do-logs)        args+=("-doLogs ")              ;;
+		-a | --admin-log)      args+=("-adminLog")             ;;
+		-n | --net-log)        args+=("-netLog")               ;;
+		-F | --freeze-check)   args+=("-freezeCheck")          ;;
+		-m | --mods)           mods+=("$2")            ; shift ;;
+		-s | --server-mods)    serverMods+=("$2")      ; shift ;;
+		-p | --port)           args+=("-port=$2")      ; shift ;;
+		-c | --cpu-count)      args+=("-cpuCount=$2")  ; shift ;;
+		-L | --limit-fps)      args+=("-limitFPS=$2")  ; shift ;;
+		-D | --dir)            dir="$2"                ; shift ;;
+		-X | --exe)            exe="$2"                ; shift ;;
+		-C | --config)         args+=("-config=$2")    ; shift ;;
+		-M | --mission)        args+=("-mission=$2")   ; shift ;;
+		-P | --profile-folder) args+=("-profiles=$2")  ; shift ;;
+		-B | --battleye-path)  args+=("-BEpath=$2")    ; shift ;;
 
 		--)
 			shift
@@ -243,61 +161,62 @@ function setupLaunchParameters() {
 		shift #go to next arg
 	done
 
-	[[ ! -z $SERVER_PORT ]] && addLaunchArguments "-port=$SERVER_PORT"
-	[[ ! -z $SERVER_CONFIG ]] && argConfig="-config=$SERVER_CONFIG"
-	[[ ! -z $SERVER_MISSION ]] && argMission="-mission=$SERVER_MISSION"
-	[[ ! -z $SERVER_PROFILE_DIR ]] && argProfile="-profiles=$SERVER_PROFILE_DIR"
-	[[ ! -z $MODS ]] && argMods="-mod=$MODS"
-	[[ ! -z $SERVER_SIDE_MODS ]] && argServerMods="-serverMod=$SERVER_SIDE_MODS"
-	[[ ! -z $SERVER_BATTLEYE_PATH ]] && argBEPath="-BEpath=$SERVER_BATTLEYE_PATH"
+	local modsArg=""
+	for mod in "${mods[@]}"; do
+		[[ -z "$modsArg" ]] && modsArg="-mod=$mod" || modsArg="$modsArg;$mod"
+	done
+	[[ ! -z "$modsArg" ]] && args+=("$modsArg")
+
+	local serverModsArg=""
+	for mod in "${mods[@]}"; do
+		[[ -z "$serverModsArg" ]] && serverModsArg="-serverMod=$mod" || serverModsArg="$serverModsArg;$mod"
+	done
+	[[ ! -z "$serverModsArg" ]] && args+=("$serverModsArg")
 
 }
 
+##
+#	Print information on parameters used when executing the command
 function printLaunchParameters() {
-	# Print launch arguments vertically
-	local formattedArgs=$(printf "
-|$launchArguments
-|$argConfig
-|$argMission
-|$argProfile" | sed "s/-/\n|\t-/g")
+	local formattedArgs=""
+	local formattedMods=""
+	printf "%s\n" "========================================================="
+	printf "%s\n" "> LAUNCHING SERVER                                       "
+	if [[ $verbosity -ge 3 ]]; then
+		printf "%s\n" "> DIR: $dir"
+		printf "%s\n" "> EXE: $exe"
+	fi
+	if [[ $verbosity -ge 2 ]]; then
+		printf "%s\n" "> ARGUMENTS:"
+		for arg in "${args[@]}"; do
+			printf "\t%s\n" "$arg"
+		done
+	fi
+	
+	printf "%s\n" "> MODS:"
+	for mod in "${mods[@]}"; do
+		local formattedMod=$(printf "%s" "$mod" | sed 's/;/\n\t/g')
+		printf "\t%s\n" "$formattedMod"
+	done
 
-	# Print mods vertically
-	local formattedMods=$(printf "
-|	${argMods//;/\\n|\\t\\t}" | sed "s/=/=\n|\t\t/g")
-
-	# Print server side mods vertically
-	local formattedServerMods=$(printf "
-|	${argServerMods//;/\\n|\\t\\t}" | sed "s/=/=\n|\t\t/g")
-
-	printf "
-/=========================================================
-|                Launching SERVER
-|
-|-EXE: 
-|	$launchExe 
-|
-|-ARGUMENTS: 
-|	$formattedArgs
-|	$formattedMods
-|	$formattedServerMods
-|---------------------------------------------------------
-"
-
+	printf "%s\n" "> SERVER MODS:"
+	for serverMod in "${serverMods[@]}"; do
+		local formattedMod=$(printf "%s" "$serverMod" | sed 's/;/\n\t/g')
+		printf "\t%s\n" "$formattedMod"
+	done
 }
 
 #############################################
 # MAIN
-#############################################
 
 setupLaunchParameters "$@"
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 
 [[ "$requestedKillProcess" = true ]] && killProcess
 
-[[ $verbosity -ge 2 ]] && formattedFunction=$(printFunctionBody wStart "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath")
-wStart "$launchExe" $launchArguments "$argConfig" "$argMission" "$argProfile" "$argMods" "$argServerMods" "$argBEPath"
-
-printf "\
-| $formattedFunction
-\\---------------------------------------------------------
-"
+if [[ $verbosity -ge 4 ]]; then
+	printf "%s\n\t" "> COMMAND:"
+	printf "%s " cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
+	printf "\n"
+fi
+cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"

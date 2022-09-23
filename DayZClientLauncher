@@ -2,28 +2,31 @@
 
 source DayZLauncherUtil
 
-CLIENT_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZ_x64.exe"
-DIAG_EXE="C:\Program Files (x86)\Steam\steamapps\common\DayZ\DayZDiag_x64.exe"
-
-# ARGUMENTS FOR DAYZ EXE
-NAME=""
-SERVER_ADDRESS=""
-SERVER_PASSWORD=""
-PROFILE_DIR=""
-MISSION=""
-WORLD=""
-MODS=""
+DIR="C:\Program Files (x86)\Steam\steamapps\common\DayZ"
+EXE="DayZ_x64.exe"
+EXE_DIAG="DayZDiag_x64.exe"
 
 ########################################################
 
+##
+# 0 = no output
+# 1 = mod list | windows output
+# 2 = mod list | windows output | arguments
+# 3 = mod list | windows output | arguments | executables
+# 4 = mod list | windows output | arguments | executables | final command 
 verbosity=0
-launchExe="$CLIENT_EXE"
-launchArguments=""
 
+dir=$DIR
+exe=$EXE
+args=()
+mods=()
+
+##
+#	Print script usage
 function printUsage() {
-	printf "
+	printf "%s" "
 - Usage
-	DayZClientLauncher [-hvkdwflsBE] [-n name] [-m modsList] [-a serverAddress:port] [-p password] [-c coresNumber] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
+	DayZClientLauncher [-hvkdwflsBE] [-n name] [-m modsList] [-a serverAddress:port] [-p password] [-c coresNumber] [-D directory] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
 	
 - Options
 	-h, --help                             Show this help.
@@ -52,6 +55,7 @@ function printUsage() {
 	                                        parallel tasks processing. It should be less or
 	                                        equal than the numbers of available cores.
 
+	-D, --dir <exe directory>              Selects where the executables are found
 	-X, --exe <exe file>                   Selects what executable file to be used
 	-M, --mission <mission>                Selects what mission to use.
 	-P, --profile-folder <profile>         Path to the folder containing server profile. By default, 
@@ -65,82 +69,45 @@ function printUsage() {
 "
 }
 
+##
+#	Kill all Dayz related processes (exe and diagnostic exe)
 function killProcess() {
 
-	local clientProcName="DayZ_x64.exe"
-	local diagProcName="DayZDiag_x64.exe"
+	local clientProcName=$EXE
+	local diagProcName=$EXE_DIAG
 
 	# if client process is alive, kill it
 	if [ ! -z "$(wFindProcess $clientProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $clientProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$clientProcName"
+		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $clientProcName... "
 		wTaskKill "$clientProcName"
-		[[ $verbosity -ge 1 ]] && printf "
-|---------------------------------------------------------
-"
 	fi
 
 	# if diagnostic process is alive, kill it
 	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && echo "Killing $diagProcName"
-		[[ $verbosity -ge 2 ]] && printFunctionBody "wTaskKill" "$diagProcName"
+		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $diagProcName... "
 		wTaskKill "$diagProcName"
-		[[ $verbosity -ge 1 ]] && printf "
-|---------------------------------------------------------
-"
 	fi
 
 }
 
-function addLaunchArguments() {
-	if [ ! -z "$1" ]; then
-		launchArguments="$launchArguments $1"
-	fi
+##
+#	Use the diagnostic executable
+function useDiagExe() {
+	exe="$EXE_DIAG"
 }
 
+##
+#	Specify to use file patching (diagnostic exe will be used)
 function useFilePatching() {
-	#grep server config
-	useDiagnostic
-	addLaunchArguments "-filePatching"
+	useDiagExe
+	args+=("-filePatching")
 }
 
-function useDiagnostic() {
-	launchExe=$DIAG_EXE
-}
-
-function addMod() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$MODS" ]; then
-			MODS="$MODS;$1"
-		else
-			MODS="$1"
-		fi
-	fi
-}
-
-function setLaunchExe() {
-	#@todo check exe
-	launchExe="$1"
-}
-
-function setMission() {
-	#@todo check mission
-	MISSION="$1"
-}
-
-function setProfileDir() {
-	#@todo check profile dir
-	PROFILE_DIR="$1"
-}
-
-function setWorld() {
-	# @todo check world
-	WORLD="$1"
-}
-
+##
+#	
 function setupLaunchParameters() {
-	shortOpt="hvkdswflBEn:m:a:p:c:X:M:P:W:"
-	longOpt="help,verbose,kill,diagnostic,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,exe:,mission:,profile-folder:,world:"
+	shortOpt="hvkdswflBEn:m:a:p:c:D:X:M:P:W:"
+	longOpt="help,verbose,kill,diagnostic,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -156,52 +123,27 @@ function setupLaunchParameters() {
 			printUsage
 			exit 1
 			;;
-		-v | --verbose) verbosity=$((verbosity + 1)) ;;
-		-k | --kill) requestedKillProcess=true ;;
-		-d | --diagnostic) useDiagnostic ;;
-		-s | --script-debug) addLaunchArguments "-scriptDebug=true" ;;
-		-f | --file-patching) useFilePatching ;;
-		-w | --windowed) addLaunchArguments "-window" ;;
-		-l | --do-logs) addLaunchArguments "-doLogs" ;;
-		-B | --buldozer) addLaunchArguments "-buldozer" ;;
-		-E | --no-pause) addLaunchArguments "-noPause" ;;
-		-n | --name)
-			NAME="$2"
-			shift
-			;;
-		-m | --mods)
-			addMod "$2"
-			shift
-			;;
-		-a | --server-address)
-			SERVER_ADDRESS="$2"
-			shift
-			;;
-		-p | --server-passoword)
-			SERVER_PASSWORD="$2"
-			shift
-			;;
-		-c | --cpu-count)
-			addLaunchArguments "-cpuCount=$2"
-			shift
-			;;
-		-X | --exe)
-			setLaunchExe "$2"
-			shift
-			;;
-		-M | --mission)
-			setMission "$2"
-			shift
-			;;
-		-P | --profile-folder)
-			setProfileDir "$2"
-			shift
-			;;
-		-W | --world)
-			setWorld "$2"
-			shift
-			;;
-
+		
+		-v | --verbose)          ((verbosity++))                 ;;
+		-k | --kill)             requestedKillProcess=true       ;;
+		-d | --diagnostic)       useDiagExe                   ;;
+		-f | --file-patching)    useFilePatching                 ;;
+		-s | --script-debug)     args+=("-scriptDebug=true")     ;;
+		-w | --windowed)         args+=("-window")               ;;
+		-l | --do-logs)          args+=("-doLogs")               ;;
+		-B | --buldozer)         args+=("-buldozer")             ;;
+		-E | --no-pause)         args+=("-noPause")              ;;
+		-n | --name)             args+=("-name=$2")      ; shift ;;
+		-m | --mods)             mods+=("$2")            ; shift ;;
+		-a | --server-address)   args+=("-connect=$2")   ; shift ;;
+		-p | --server-passoword) args+=("-password=$2")  ; shift ;;
+		-c | --cpu-count)        args+=("-cpuCount=$2")  ; shift ;;
+		-D | --dir)              dir="$2"                ; shift ;;
+		-X | --exe)              exe="$2"                ; shift ;;
+		-M | --mission)          args+=("-mission=$2")   ; shift ;;
+		-P | --profile-folder)   args+=("-profiles=$2")  ; shift ;;
+		-W | --world)            args+=("-world=$2")     ; shift ;;
+		
 		--)
 			shift
 			break
@@ -215,56 +157,50 @@ function setupLaunchParameters() {
 		shift #go to next arg
 	done
 
-	[[ ! -z $NAME ]] && argName="-name=$NAME"
-	[[ ! -z $SERVER_ADDRESS ]] && argAddress="-connect=$SERVER_ADDRESS"
-	[[ ! -z $SERVER_PASSWORD ]] && argPassword="-password=$SERVER_PASSWORD"
-	[[ ! -z $MISSION ]] && argMission="-mission=$MISSION"
-	[[ ! -z $PROFILE_DIR ]] && argProfile="-profiles=$PROFILE_DIR"
-	[[ ! -z $MODS ]] && argMods="-mod=$MODS"
-	[[ ! -z $WORLD ]] && argWorld="-world=$WORLD"
-
+	local modsArg=""
+	for mod in "${mods[@]}"; do
+		[[ -z "$modsArg" ]] && modsArg="-mod=$mod" || modsArg="$modsArg;$mod"
+	done
+	[[ ! -z "$modsArg" ]] && args+=("$modsArg")
 }
 
+##
+#	Print information on parameters used when executing the command
 function printLaunchParameters() {
-	# Print launch arguments vertically
-	local formattedArgs=$(printf "
-|$launchArguments $argName $argAddress $argPassword
-|$argMission 
-|$argProfile
-|$argWorld" | sed "s/-/\n|\t-/g")
-
-	# Print mods vertically
-	local formattedMods=$(printf "
-|	${argMods//;/\\n|\\t\\t}" | sed "s/=/=\n|\t\t/g")
-
-	printf "
-/=========================================================
-|                Launching CLIENT
-|
-|-EXE: 
-|	$launchExe 
-|
-|-ARGUMENTS: 
-|	$formattedArgs
-|	$formattedMods
-|---------------------------------------------------------
-"
-
+	local formattedArgs=""
+	local formattedMods=""
+	printf "%s\n" "========================================================="
+	printf "%s\n" "> LAUNCHING CLIENT                                       "
+	if [[ $verbosity -ge 3 ]]; then
+		printf "%s\n" "> DIR: $dir"
+		printf "%s\n" "> EXE: $exe"
+	fi
+	if [[ $verbosity -ge 2 ]]; then
+		printf "%s\n" "> ARGUMENTS:"
+		for arg in "${args[@]}"; do
+			printf "\t%s\n" "$arg"
+		done
+	fi
+	printf "%s\n" "> MODS:"
+	for mod in "${mods[@]}"; do
+		local formattedMod=$(printf "%s" "$mod" | sed 's/;/\n\t/g')
+		printf "\t%s\n" "$formattedMod"
+	done
 }
+
 
 #############################################
 # MAIN
-#############################################
 
 setupLaunchParameters "$@"
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 
 [[ "$requestedKillProcess" = true ]] && killProcess
 
-[[ $verbosity -ge 2 ]] && formattedFunction=$(printFunctionBody wStart "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld")
-wStart "$launchExe" $launchArguments "$argMission" "$argProfile" "$argMods" "$argName" "$argAddress" "$argPassword" "$argWorld"
+if [[ $verbosity -ge 4 ]]; then
+	printf "%s\n\t" "> COMMAND:"
+	printf "%s " cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
+	printf "\n"
+fi
+cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
 
-printf "\
-| $formattedFunction
-\\---------------------------------------------------------
-"
