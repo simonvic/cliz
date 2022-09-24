@@ -162,7 +162,6 @@ function setupLaunchParameters() {
 ##
 #	Print information on parameters used when executing the command
 function printLaunchParameters() {
-	printf "%s\n" "========================================================="
 	printf "%s\n" "> LAUNCHING ADDON BUILDER"
 	[[ $verbosity -ge 4 ]] && printf "%s\n" "> EXE: $ADDON_BUILDER_EXE"
 	if [[ $verbosity -ge 1 ]]; then
@@ -199,13 +198,13 @@ function copyKey() {
 	wMkdir "$destDir\Keys"
 	local publicKey="${privateKey%.*}.bikey"
 	if [[ $verbosity -ge 1 ]]; then
-		printf "%s\n" "> COPYING PUBLIC KEY"
+		printf "\t%s\n" "> COPYING PUBLIC KEY"
 		if [[ $verbosity -ge 2 ]]; then
-			printf "\t%s\n" "- SOURCE:      $publicKey"
-			printf "\t%s\n" "- DESTINATION: $destDir\Keys\\${publicKey##*\\}"
+			printf "\t\t%s\n" "- SOURCE:      $publicKey"
+			printf "\t\t%s\n" "- DESTINATION: $destDir\Keys\\${publicKey##*\\}"
 		fi
 		if [[ $verbosity -ge 4 ]]; then
-			printf "\t%s" "> COMMAND: "
+			printf "\t\t%s" "> COMMAND: "
 			echo cmd.exe "/c" "copy" "$publicKey" "$destDir\Keys"
 		fi
 	fi
@@ -220,13 +219,13 @@ function copyKey() {
 function copyModDescriptor() {
 	local modDescriptor="$srcDir\mod.ini"
 	if [[ $verbosity -ge 1 ]]; then
-		printf "%s\n" "> COPYING MOD DESCRIPTOR"
+		printf "\t%s\n" "> COPYING MOD DESCRIPTOR"
 		if [[ $verbosity -ge 2 ]]; then
-			printf "\t%s\n" "- SOURCE:      $modDescriptor"
-			printf "\t%s\n" "- DESTINATION: $destDir\mod.cpp"
+			printf "\t\t%s\n" "- SOURCE:      $modDescriptor"
+			printf "\t\t%s\n" "- DESTINATION: $destDir\mod.cpp"
 		fi
 		if [[ $verbosity -ge 4 ]]; then
-			printf "\t%s" "> COMMAND: "
+			printf "\t\t%s" "> COMMAND: "
 			echo cmd.exe "/c" "copy" "$modDescriptor" "$destDir\mod.cpp"
 		fi
 	fi

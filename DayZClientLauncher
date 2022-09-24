@@ -72,7 +72,7 @@ function printUsage() {
 ##
 #	Kill all Dayz related processes (exe and diagnostic exe)
 function killProcess() {
-
+	printf "%s\n" "> KILLING PROCESSES"
 	local clientProcName=$EXE
 	local diagProcName=$EXE_DIAG
 
@@ -167,25 +167,24 @@ function setupLaunchParameters() {
 ##
 #	Print information on parameters used when executing the command
 function printLaunchParameters() {
-	local formattedArgs=""
-	local formattedMods=""
-	printf "%s\n" "========================================================="
-	printf "%s\n" "> LAUNCHING CLIENT                                       "
+	printf "%s\n" "> LAUNCHING CLIENT"
 	if [[ $verbosity -ge 3 ]]; then
-		printf "%s\n" "> DIR: $dir"
-		printf "%s\n" "> EXE: $exe"
+		printf "\t%s\n" "- DIR: $dir"
+		printf "\t%s\n" "- EXE: $exe"
 	fi
 	if [[ $verbosity -ge 2 ]]; then
-		printf "%s\n" "> ARGUMENTS:"
+		printf "\t%s\n" "- ARGUMENTS:"
 		for arg in "${args[@]}"; do
-			printf "\t%s\n" "$arg"
+			printf "\t\t%s\n" "$arg"
 		done
 	fi
-	printf "%s\n" "> MODS:"
-	for mod in "${mods[@]}"; do
-		local formattedMod=$(printf "%s" "$mod" | sed 's/;/\n\t/g')
-		printf "\t%s\n" "$formattedMod"
-	done
+	if [[ ${#mods[*]} -gt 0 ]]; then
+		printf "\t%s\n" "- MODS:"
+		for mod in "${mods[@]}"; do
+			local formattedMod=$(printf "%s" "$mod" | sed 's/;/\n\t\t/g')
+			printf "\t\t%s\n" "$formattedMod"
+		done
+	fi
 }
 
 
@@ -193,14 +192,12 @@ function printLaunchParameters() {
 # MAIN
 
 setupLaunchParameters "$@"
+[[ "$requestedKillProcess" = true ]] && killProcess
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 
-[[ "$requestedKillProcess" = true ]] && killProcess
-
 if [[ $verbosity -ge 4 ]]; then
-	printf "%s\n\t" "> COMMAND:"
-	printf "%s " cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
-	printf "\n"
+	printf "\t%s" "> COMMAND: "
+	echo cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
 fi
 cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
 
