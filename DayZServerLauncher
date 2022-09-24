@@ -1,11 +1,7 @@
 #!/bin/bash
 
+source config.sh
 source DayZLauncherUtil
-
-DIR="C:\Program Files (x86)\Steam\steamapps\common\DayZServer"
-DIR_CLIENT="C:\Program Files (x86)\Steam\steamapps\common\DayZ"
-EXE="DayZ_x64.exe"
-EXE_DIAG="DayZDiag_x64.exe"
 
 ########################################################
 
@@ -16,6 +12,8 @@ EXE_DIAG="DayZDiag_x64.exe"
 # 3 = mod list | windows output | arguments | executables
 # 4 = mod list | windows output | arguments | executables | final command 
 verbosity=0
+useExperimental=false
+useDiag=false
 dir=$DIR
 exe=$EXE
 args=()
@@ -25,12 +23,13 @@ serverMods=()
 function printUsage() {
 	printf "
 - Usage
-	DayZServerLauncher [-hvkdflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-D directory] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
+	DayZServerLauncher [-hvkdeflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-D directory] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
 	
 - Options
 	-h, --help                        Show this help.
 	-v, --verbose                     Be verbose. Can be repeated for more verbosity
 	-k, --kill                        Kill active processes before starting a new one
+	-e, --experimental                Use experimental executable.
 	-d, --diagnostic                  Use diagnostic executable.
 	-f, --file-patching               Ensures that only PBOs are loaded 
 	                                   and NO unpacked data.
@@ -77,8 +76,8 @@ function printUsage() {
 #	Kill all Dayz related processes (exe and diagnostic exe)
 function killProcess() {
 	printf "%s\n" "> KILLING PROCESSES"
-	local serverProcName=$EXE
-	local diagProcName=$EXE_DIAG
+	local serverProcName=$SERVER_EXE
+	local diagProcName=$DIAG_EXE
 
 	# if server process is alive, kill it
 	if [ ! -z "$(wFindProcess $serverProcName)" ]; then
@@ -94,25 +93,29 @@ function killProcess() {
 
 }
 
+##
+#	Specify to use experimental executable
+function useExperimental() {
+	useExperimental=true
+}
 
 ##
 #	Use the diagnostic executable
-function useDiagExe() {
-	dir="$DIR_CLIENT"
-	exe="$EXE_DIAG"
+function useDiag() {
+	useDiag=true
 	args+=("-server")
 }
 
 ##
 #	Specify to use file patching (diagnostic exe will be used)
 function useFilePatching() {
-	useDiagExe
+	useDiag
 	args+=("-filePatching")
 }
 
 function setupLaunchParameters() {
-	shortOpt="hvkdflanFm:s:p:c:L:D:X:C:M:P:B:"
-	longOpt="help,verbose,kill,diagnostic,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:"
+	shortOpt="hvkdeflanFm:s:p:c:L:D:X:C:M:P:B:"
+	longOpt="help,verbose,kill,diagnostic,experimental,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZServerLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -130,9 +133,10 @@ function setupLaunchParameters() {
 			;;
 		-v | --verbose)        ((verbosity++))                 ;;
 		-k | --kill)           requestedKillProcess=true       ;;
-		-d | --diagnostic)     useDiagExe                      ;;
+		-d | --diagnostic)     useDiag                         ;;
+		-e | --experimental)   useExperimental                 ;;
 		-f | --file-patching)  useFilePatching                 ;;
-		-l | --do-logs)        args+=("-doLogs ")              ;;
+		-l | --do-logs)        args+=("-doLogs")               ;;
 		-a | --admin-log)      args+=("-adminLog")             ;;
 		-n | --net-log)        args+=("-netLog")               ;;
 		-F | --freeze-check)   args+=("-freezeCheck")          ;;
@@ -168,7 +172,7 @@ function setupLaunchParameters() {
 	[[ ! -z "$modsArg" ]] && args+=("$modsArg")
 
 	local serverModsArg=""
-	for mod in "${mods[@]}"; do
+	for mod in "${serverMods[@]}"; do
 		[[ -z "$serverModsArg" ]] && serverModsArg="-serverMod=$mod" || serverModsArg="$serverModsArg;$mod"
 	done
 	[[ ! -z "$serverModsArg" ]] && args+=("$serverModsArg")
@@ -207,15 +211,36 @@ function printLaunchParameters() {
 	fi
 }
 
+##
+#	Setup directory and executables based on the flag given
+function setupExecutables() {
+	if [[ $useExperimental == true ]]; then
+		if [[ $useDiag == true ]]; then
+			dir="$CLIENT_INSTALL_DIR_EXP"  # diagnostic executable is shipped only with client
+			exe="$DIAG_EXE"
+		else
+			dir="$SERVER_INSTALL_DIR_EXP"
+			exe="$SERVER_EXE"
+		fi
+	else
+		if [[ $useDiag == true ]]; then
+			dir="$CLIENT_INSTALL_DIR"  # diagnostic executable is shipped only with client
+			exe="$DIAG_EXE"
+		else
+			dir="$SERVER_INSTALL_DIR"
+			exe="$SERVER_EXE"
+		fi
+	fi
+}
 #############################################
 # MAIN
-
 setupLaunchParameters "$@"
+setupExecutables
 [[ "$requestedKillProcess" = true ]] && killProcess
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 
 if [[ $verbosity -ge 4 ]]; then
-	printf "\t%s" "> COMMAND:"
-	echo cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
+	printf "\t%s" "> COMMAND: "
+	echo cmd.exe /c "cd /d $dir && START $exe ${args[@]}"
 fi
-cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
+cmd.exe /c "cd /d $dir && START $exe ${args[@]}"

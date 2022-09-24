@@ -1,10 +1,8 @@
 #!/bin/bash
 
+source config.sh
 source DayZLauncherUtil
 
-DIR="C:\Program Files (x86)\Steam\steamapps\common\DayZ"
-EXE="DayZ_x64.exe"
-EXE_DIAG="DayZDiag_x64.exe"
 
 ########################################################
 
@@ -15,9 +13,10 @@ EXE_DIAG="DayZDiag_x64.exe"
 # 3 = mod list | windows output | arguments | executables
 # 4 = mod list | windows output | arguments | executables | final command 
 verbosity=0
-
-dir=$DIR
-exe=$EXE
+useExperimental=false
+useDiag=false
+dir=$CLIENT_INSTALL_DIR
+exe=$CLIENT_EXE
 args=()
 mods=()
 
@@ -26,12 +25,13 @@ mods=()
 function printUsage() {
 	printf "%s" "
 - Usage
-	DayZClientLauncher [-hvkdwflsBE] [-n name] [-m modsList] [-a serverAddress:port] [-p password] [-c coresNumber] [-D directory] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
+	DayZClientLauncher [-hvkdewflsBE] [-n name] [-m modsList] [-a serverAddress:port] [-p password] [-c coresNumber] [-D directory] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
 	
 - Options
 	-h, --help                             Show this help.
 	-v, --verbose                          Be verbose. Can be repeated for more verbosity
 	-k, --kill                             Kill active processes before starting a new one
+	-e, --experimental                     Use experimental executable.
 	-d, --diagnostic                       Use diagnostic executable.
 	-w, --windowed                         Runs the game in windowed mode
 	-n, --name <name>                      Selects a profile from profiles folder with the 
@@ -73,8 +73,8 @@ function printUsage() {
 #	Kill all Dayz related processes (exe and diagnostic exe)
 function killProcess() {
 	printf "%s\n" "> KILLING PROCESSES"
-	local clientProcName=$EXE
-	local diagProcName=$EXE_DIAG
+	local clientProcName=$CLIENT_EXE
+	local diagProcName=$DIAG_EXE
 
 	# if client process is alive, kill it
 	if [ ! -z "$(wFindProcess $clientProcName)" ]; then
@@ -91,23 +91,29 @@ function killProcess() {
 }
 
 ##
-#	Use the diagnostic executable
-function useDiagExe() {
-	exe="$EXE_DIAG"
+#	Specify to use experimental executable
+function useExperimental() {
+	useExperimental=true
+}
+
+##
+#	Specify to use diagnostic executable
+function useDiag() {
+	useDiag=true
 }
 
 ##
 #	Specify to use file patching (diagnostic exe will be used)
 function useFilePatching() {
-	useDiagExe
+	useDiag
 	args+=("-filePatching")
 }
 
 ##
 #	
 function setupLaunchParameters() {
-	shortOpt="hvkdswflBEn:m:a:p:c:D:X:M:P:W:"
-	longOpt="help,verbose,kill,diagnostic,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:"
+	shortOpt="hvkdeswflBEn:m:a:p:c:D:X:M:P:W:"
+	longOpt="help,verbose,kill,diagnostic,experimental,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -126,7 +132,8 @@ function setupLaunchParameters() {
 		
 		-v | --verbose)          ((verbosity++))                 ;;
 		-k | --kill)             requestedKillProcess=true       ;;
-		-d | --diagnostic)       useDiagExe                   ;;
+		-d | --diagnostic)       useDiag                         ;;
+		-e | --experimental)     useExperimental                 ;;
 		-f | --file-patching)    useFilePatching                 ;;
 		-s | --script-debug)     args+=("-scriptDebug=true")     ;;
 		-w | --windowed)         args+=("-window")               ;;
@@ -187,17 +194,24 @@ function printLaunchParameters() {
 	fi
 }
 
+##
+#	Setup directory and executables based on the flag given
+function setupExecutables() {
+	[[ $useExperimental == true ]] && dir=$CLIENT_INSTALL_DIR_EXP || dir=$CLIENT_INSTALL_DIR
+	[[ $useDiag == true ]] && exe=$DIAG_EXE || exe=$CLIENT_EXE
+}
 
 #############################################
 # MAIN
-
 setupLaunchParameters "$@"
+setupExecutables
 [[ "$requestedKillProcess" = true ]] && killProcess
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 
 if [[ $verbosity -ge 4 ]]; then
 	printf "\t%s" "> COMMAND: "
-	echo cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
+	echo cmd.exe /c "cd /d $dir && START $exe ${args[@]}"
 fi
-cmd.exe "/c" "START" "/D" "$dir" "$exe" "${args[@]}"
+# aah... the magic of windows cmd 
+cmd.exe /c "cd /d $dir && START $exe ${args[@]}"
 
