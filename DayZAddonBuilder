@@ -5,13 +5,20 @@ source DayZLauncherUtil
 DAYZ_TOOLS="C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools"
 ADDON_BUILDER_EXE="$DAYZ_TOOLS\Bin\AddonBuilder\AddonBuilder.exe"
 
-MOD_SRC_DIR=""
-MOD_BUILD_DIR=""
+args=()
+srcDir=""
+destDir=""
+privateKey=""
 
-launchArguments=()
-declare -A launchValuedArguments
-
+##
+# 0 = no output
+# 1 = mod list | windows output
+# 2 = mod list | windows output | arguments
+# 3 = mod list | windows output | arguments | executables
+# 4 = mod list | windows output | arguments | executables | final command 
 verbosity=0
+
+dryRun=false
 
 function printUsage() {
 	printf "
@@ -28,7 +35,7 @@ function printUsage() {
 	-c, --clear-temp                       Before binarizing, the content of subfolder for the 
 	                                        current project is deleted.
 
-	-b, -binarize-all-textures             Binarize all .TGA, .PNG textures even if they are not
+	-b, --binarize-all-textures            Binarize all .TGA, .PNG textures even if they are not
 	                                        referenced by any model or included in
 	                                        any textures.lst file.
 
@@ -85,6 +92,8 @@ function printUsage() {
 	-T, --dayz-tools <folder>              Specifies the path to DayZ Tools directory with other 
 	                                        tools (Binarize, CfgConvert, Filebank, ...). By default 
 	                                        is the directory retrieved from Steam client.
+	
+	--dry-run                              Emulate the build without actually doing anything
 
 	
 "
@@ -92,7 +101,7 @@ function printUsage() {
 
 function setupLaunchParameters() {
 	shortOpt="hvocbls:d:t:p:P:k:K:i:e:V:B:C:F:D:T:"
-	longOpt="help,verbose,only-pack,clear-temp,binarize-all-textures,extended-logs,source:,destination:,temp-folder:,prefix:,project-path:,sign-with:,sign-with-copy:,include:,exclude:,pbo-version:,binarize-exe:,cfgConvert-exe:,filebank-exe:,dssignfile-exe:,dayz-tools:"
+	longOpt="help,verbose,only-pack,clear-temp,binarize-all-textures,extended-logs,source:,destination:,temp-folder:,prefix:,project-path:,sign-with:,sign-with-copy:,include:,exclude:,pbo-version:,binarize-exe:,cfgConvert-exe:,filebank-exe:,dssignfile-exe:,dayz-tools:,dry-run"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZModBuilder -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -108,75 +117,31 @@ function setupLaunchParameters() {
 			printUsage
 			exit 1
 			;;
-		-v | --verbose) ((verbosity++)) ;;
-
-		-o | --only-pack) launchArguments+=("-packonly") ;;
-		-c | --clear-temp) launchArguments+=("-clear") ;;
-		-b | --binarize-all-textures) launchArguments+=("-binarizeAllTextures") ;;
-		-l | --extended-logs) launchArguments+=("-binarizeFullLogs") ;;
-		-s | --source)
-			MOD_SRC_DIR="$2"
-			shift
-			;;
-		-d | --destination)
-			MOD_BUILD_DIR="$2"
-			shift
-			;;
-		-t | --temp-folder)
-			launchValuedArguments["-temp"]="$2"
-			shift
-			;;
-		-p | --prefix)
-			launchValuedArguments["-prefix"]="$2"
-			shift
-			;;
-		-P | --project-path)
-			launchValuedArguments["-project"]="$2"
-			shift
-			;;
-		-k | --sign-with)
-			launchValuedArguments["-sign"]="$2"
-			shift
-			;;
-		-K | --sign-with-copy)
-			launchValuedArguments["-sign"]="$2"
-			willCopyKey=true
-			shift
-			;;
-		-i | --include)
-			launchValuedArguments["-include"]="$2"
-			shift
-			;;
+		-v | --verbose)               ((verbosity++))                                  ;;
+		-o | --only-pack)             args+=("-packonly")                              ;;
+		-c | --clear-temp)            args+=("-clear")                                 ;;
+		-b | --binarize-all-textures) args+=("-binarizeAllTextures")                   ;;
+		-l | --extended-logs)         args+=("-binarizeFullLogs")                      ;;
+		-s | --source)                srcDir="$2"                              ; shift ;;
+		-d | --destination)           destDir="$2"                             ; shift ;;
+		-t | --temp-folder)           args+=("-temp=$2")                       ; shift ;;
+		-p | --prefix)                args+=("-prefix=$2")                     ; shift ;;
+		-P | --project-path)          args+=("-project=$2")                    ; shift ;;
+		-k | --sign-with)             privateKey="$2"                           ; shift ;;
+		-K | --sign-with-copy)        privateKey="$2" && willCopyKey=true       ; shift ;;
+		-i | --include)               args+=("-include=$2")                    ; shift ;;
+		-V | --pbo-version)           args+=("-pboversion=$2")                 ; shift ;;
+		-B | --binarize-exe)          args+=("-binarize=$2")                   ; shift ;;
+		-C | --cfgConvert-exe)        args+=("-cfgconvert=$2")                 ; shift ;;
+		-F | --filebank-exe)          args+=("-filebank=$2")                   ; shift ;;
+		-D | --dssignfile-exe)        args+=("-dssignfile=$2")                 ; shift ;;
+		-T | --dayz-tools)            args+=("-toolsDirectory=$2")             ; shift ;;
 		-e | --exclude)
 			echo "WARNING: Exclude command is broken. Ignoring it. Edit the default exclude.lst file to exclude files"
-			#launchValuedArguments["-exclude"]="$2"
+			# args+=("-exclude=$2"); shift
 			shift
 			;;
-		-V | --pbo-version)
-			launchValuedArguments["-pboversion"]="$2"
-			shift
-			;;
-		-B | --binarize-exe)
-			launchValuedArguments["-binarize"]="$2"
-			shift
-			;;
-		-C | --cfgConvert-exe)
-			launchValuedArguments["-cfgconvert"]="$2"
-			shift
-			;;
-		-F | --filebank-exe)
-			launchValuedArguments["-filebank"]="$2"
-			shift
-			;;
-		-D | --dssignfile-exe)
-			launchValuedArguments["-dssignfile"]="$2"
-			shift
-			;;
-		-T | --dayz-tools)
-			launchValuedArguments["-toolsDirectory"]="$2"
-			shift
-			;;
-
+		--dry-run) dryRun=true ;;
 		--)
 			shift
 			break
@@ -189,89 +154,118 @@ function setupLaunchParameters() {
 		esac
 		shift #go to next arg
 	done
+
+	[[ ! -z "$privateKey" ]] && args+=("-sign=$privateKey")
 }
 
+
+##
+#	Print information on parameters used when executing the command
 function printLaunchParameters() {
-	# Print launch arguments vertically
-	local formattedArgs=$(echo "${launchArguments[*]} " | sed "s/-/\n|\t-/g" | sed "/| /d")
+	printf "%s\n" "========================================================="
+	printf "%s\n" "> LAUNCHING ADDON BUILDER"
+	[[ $verbosity -ge 4 ]] && printf "%s\n" "> EXE: $ADDON_BUILDER_EXE"
+	if [[ $verbosity -ge 1 ]]; then
+		printf "\t%s\n" "- SOURCE:      ${srcDir}"
+		printf "\t%s\n" "- DESTINATION: ${destDir}"
+	fi
 
-	echo "\
-/=========================================================
-|                Building mod
-|
-|-EXE: $ADDON_BUILDER_EXE 
-|
-|-MOD SOURCE:      ${MOD_SRC_DIR}
-|-MOD DESTINATION: ${MOD_BUILD_DIR}
-|
-|-ARGUMENTS: $formattedArgs"
-	for arg in "${!launchValuedArguments[@]}"; do
-		echo "\
-|	$arg = ${launchValuedArguments[$arg]}"
-	done
-}
-
-function prepareValuedArguments() {
-	local valuedArgs=()
-	for arg in "${!launchValuedArguments[@]}"; do
-		valuedArgs+=("$arg=${launchValuedArguments[$arg]}")
-	done
-	echo ${valuedArgs[*]}
+	if [[ $verbosity -ge 4 ]]; then
+		# Print launch arguments vertically
+		printf "\t%s\n" "- ARGUMENTS:"
+		for arg in "${args[@]}"; do
+			printf "\t\t%s\n" "$arg"
+		done
+	fi
 }
 
 function startAddonBuilderGUI() {
-	cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}"
+	if [[ $verbosity -ge 4 ]]; then
+		printf "\t%s" "> COMMAND: "
+		echo cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}"
+	fi
+	[[ "$dryRun" == false ]] && cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}"
 }
 
 function startAddonBuild() {
-	cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$MOD_SRC_DIR" "$MOD_BUILD_DIR\Addons" ${launchArguments[*]} $(prepareValuedArguments)
+	if [[ $verbosity -ge 4 ]]; then
+		printf "\t%s" "> COMMAND: "
+		echo cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$srcDir" "$destDir\Addons" "${args[@]}"
+	fi
+	[[ "$dryRun" == false ]] && cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$srcDir" "$destDir\Addons" "${args[@]}"
 }
 
 function copyKey() {
-	wMkdir "$MOD_BUILD_DIR\Keys"
-	local publicKey="${launchValuedArguments[-sign]}"
-	echo "Copying public key $publicKey -> $MOD_BUILD_DIR\Keys"
-	cmd.exe "/c" "copy" "${publicKey%.*}.bikey" "$MOD_BUILD_DIR\Keys"
+	wMkdir "$destDir\Keys"
+	local publicKey="${privateKey%.*}.bikey"
+	if [[ $verbosity -ge 1 ]]; then
+		printf "%s\n" "> COPYING PUBLIC KEY"
+		if [[ $verbosity -ge 2 ]]; then
+			printf "\t%s\n" "- SOURCE:      $publicKey"
+			printf "\t%s\n" "- DESTINATION: $destDir\Keys\\${publicKey##*\\}"
+		fi
+		if [[ $verbosity -ge 4 ]]; then
+			printf "\t%s" "> COMMAND: "
+			echo cmd.exe "/c" "copy" "$publicKey" "$destDir\Keys"
+		fi
+	fi
+	[[ "$dryRun" == true ]] && return
+	if [[ $verbosity -ge 2 ]]; then
+		cmd.exe "/c" "copy" "$publicKey" "$destDir\Keys"
+	else
+		cmd.exe "/c" "copy" "$publicKey" "$destDir\Keys" >/dev/null
+	fi
 }
 
 function copyModDescriptor() {
-	local modDescriptor="$MOD_SRC_DIR\mod.ini"
-	echo "Copying public key $modDescriptor -> $MOD_BUILD_DIR"
-	cmd.exe "/c" "copy" "$modDescriptor" "$MOD_BUILD_DIR\mod.cpp"
-	#cmd.exe "/c" "IF" "EXIST" "$modDescriptor" "copy" "$modDescriptor" "$MOD_BUILD_DIR"
+	local modDescriptor="$srcDir\mod.ini"
+	if [[ $verbosity -ge 1 ]]; then
+		printf "%s\n" "> COPYING MOD DESCRIPTOR"
+		if [[ $verbosity -ge 2 ]]; then
+			printf "\t%s\n" "- SOURCE:      $modDescriptor"
+			printf "\t%s\n" "- DESTINATION: $destDir\mod.cpp"
+		fi
+		if [[ $verbosity -ge 4 ]]; then
+			printf "\t%s" "> COMMAND: "
+			echo cmd.exe "/c" "copy" "$modDescriptor" "$destDir\mod.cpp"
+		fi
+	fi
+	[[ "$dryRun" == true ]] && return
+	if [[ $verbosity -ge 2 ]]; then
+		cmd.exe "/c" "copy" "$modDescriptor" "$destDir\mod.cpp"
+	else
+		cmd.exe "/c" "copy" "$modDescriptor" "$destDir\mod.cpp" >/dev/null
+	fi
 }
 
 #############################################
 # MAIN
-setupLaunchParameters $@
+setupLaunchParameters "$@"
+[[ "$dryRun" == true ]] && printf "%s\n" "> DRY RUN..."
 
-# Launche GUI
-if [ -z "$MOD_SRC_DIR" ] && [ -z "$MOD_BUILD_DIR" ] && [ "${#launchArguments[@]}" -eq 0 ] && [ "${#launchValuedArguments[@]}" -eq 0 ]; then
+# Launch GUI
+if [ -z "$srcDir" ] && [ -z "$destDir" ] && [ "${#args[@]}" -eq 0 ]; then
 	[[ $verbosity -ge 1 ]] && echo "No parameters specified, launching AddonBuilder GUI"
 	case $verbosity in
-	0 | 1) startAddonBuilderGUI >/dev/null 2>/dev/null ;;
-	2) startAddonBuilderGUI >/dev/null ;;
-	3) startAddonBuilderGUI ;;
+		0 | 1) startAddonBuilderGUI >/dev/null 2>/dev/null ;;
+		2) startAddonBuilderGUI 2>/dev/null ;;
+		*) startAddonBuilderGUI ;;
 	esac
+	
 	exit 1
 fi
 
-: ${MOD_SRC_DIR:?"A mod source directory MUST be defined!"}
-: ${MOD_BUILD_DIR:?"A mod destination directory MUST be defined!"}
+: ${srcDir:?"A mod source directory MUST be defined!"}
+: ${destDir:?"A mod destination directory MUST be defined!"}
 
 [[ $verbosity -ge 1 ]] && printLaunchParameters
-[[ $verbosity -ge 2 ]] && echo "\
-|---------------------------------------------------------
-cmd.exe \"/c\" \"cd\" \"/D\" \"${ADDON_BUILDER_EXE%\\*}\" \"&&\" \".\\${ADDON_BUILDER_EXE##*\\}\" \"$MOD_SRC_DIR\" \"$MOD_BUILD_DIR\" ${launchArguments[*]} $(prepareValuedArguments)"
-[[ $verbosity -ge 1 ]] && echo "\
-|---------------------------------------------------------"
 
 case $verbosity in
-0 | 1) startAddonBuild >/dev/null 2>/dev/null ;;
-2) startAddonBuild 2>/dev/null ;;
-3) startAddonBuild >/dev/null ;;
-4) startAddonBuild ;;
+	0 | 1) startAddonBuild >/dev/null 2>/dev/null ;;
+	2) startAddonBuild 2>/dev/null ;;
+	*) startAddonBuild ;;
 esac
+
 
 [[ $willCopyKey == true ]] && copyKey
 copyModDescriptor
