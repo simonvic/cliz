@@ -241,6 +241,6 @@ setupExecutables
 
 if [[ $verbosity -ge 4 ]]; then
 	printf "\t%s" "> COMMAND: "
-	echo cmd.exe /c "cd /d $dir && START $exe ${args[@]}"
+	echo cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}"
 fi
-cmd.exe /c "cd /d $dir && START $exe ${args[@]}"
+cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}"
