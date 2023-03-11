@@ -213,5 +213,5 @@ if [[ $verbosity -ge 4 ]]; then
 	echo cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}"
 fi
 # aah... the magic of windows cmd 
-cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}"
+cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}" &
 
