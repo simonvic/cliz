@@ -68,6 +68,8 @@ function printUsage() {
 	                                   variables are supported. E.g. &ampuserprofile&amp
 
 	-B, --battleye-path <path>        Sets a custom path to the Battleye files
+	    --script-define <define>      Specify to load a script preprocessor define.
+	                                   Can be repeated to define more.
 
 "
 }
@@ -115,7 +117,7 @@ function useFilePatching() {
 
 function setupLaunchParameters() {
 	shortOpt="hvkdeflanFm:s:p:c:L:D:X:C:M:P:B:"
-	longOpt="help,verbose,kill,diagnostic,experimental,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:"
+	longOpt="help,verbose,kill,diagnostic,experimental,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:,script-define:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZServerLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -151,6 +153,7 @@ function setupLaunchParameters() {
 		-M | --mission)        args+=("-mission=$2")   ; shift ;;
 		-P | --profile-folder) args+=("-profiles=$2")  ; shift ;;
 		-B | --battleye-path)  args+=("-BEpath=$2")    ; shift ;;
+		--script-define)       args+=("-scrDef=$2")    ; shift ;;
 
 		--)
 			shift

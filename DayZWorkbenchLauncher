@@ -14,19 +14,21 @@ function printUsage() {
 	DayZWorkbenchLauncher [-hv] [-m modsList] [-X exeFile]
 	
 - Options
-	-h, --help              Show this help.
-	-v, --verbose           Be verbose. Can be repeated for more verbosity
-	-m, --mods <mods>       Loads the specified sub-folders for different mods.
-	                         Separated by semi-colons. Absolute path and 
-	                         multiple stacked folders are possible.
+	-h, --help                     Show this help.
+	-v, --verbose                  Be verbose. Can be repeated for more verbosity
+	-m, --mods <mods>              Loads the specified sub-folders for different mods.
+	                                Separated by semi-colons. Absolute path and 
+	                                multiple stacked folders are possible.
 
-	-X, --exe <exe path>    Selects what executable file to be used
+	-X, --exe <exe path>           Selects what executable file to be used
+	    --script-define <define>   Specify to load a script preprocessor define.
+	                                Can be repeated to define more.
 "
 }
 
 function setupLaunchParameters() {
-	shortOpt="hvm:X:"
-	longOpt="help,verbose,mods:,exe:"
+	local shortOpt="hvm:X:"
+	local longOpt="help,verbose,mods:,exe:,script-define:"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZWorkbenchLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
