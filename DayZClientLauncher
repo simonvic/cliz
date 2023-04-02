@@ -67,6 +67,7 @@ function printUsage() {
 	-W, --world <world>                    Selects a game world to be loaded by default
 	    --script-define <define>           Specify to load a script preprocessor define.
 	                                        Can be repeated to define more.
+	    --ignore-new-errors                Newly added game / script errors are treated as warning.
 
 "
 }
@@ -115,7 +116,7 @@ function useFilePatching() {
 #	
 function setupLaunchParameters() {
 	shortOpt="hvkdeswflBEn:m:a:p:c:D:X:M:P:W:"
-	longOpt="help,verbose,kill,diagnostic,experimental,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:,script-define:"
+	longOpt="help,verbose,kill,diagnostic,experimental,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:,script-define:,ignore-new-errors"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -153,6 +154,7 @@ function setupLaunchParameters() {
 		-P | --profile-folder)   args+=("-profiles=$2")  ; shift ;;
 		-W | --world)            args+=("-world=$2")     ; shift ;;
 		--script-define)         args+=("-scrDef=$2")    ; shift ;;
+		--ignore-new-errors)     args+=("-newErrorsAreWarning=1");;
 		
 		--)
 			shift

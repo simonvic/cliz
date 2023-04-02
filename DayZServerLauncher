@@ -70,6 +70,7 @@ function printUsage() {
 	-B, --battleye-path <path>        Sets a custom path to the Battleye files
 	    --script-define <define>      Specify to load a script preprocessor define.
 	                                   Can be repeated to define more.
+	    --ignore-new-errors           Newly added game / script errors are treated as warning.
 
 "
 }
@@ -117,7 +118,7 @@ function useFilePatching() {
 
 function setupLaunchParameters() {
 	shortOpt="hvkdeflanFm:s:p:c:L:D:X:C:M:P:B:"
-	longOpt="help,verbose,kill,diagnostic,experimental,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:,script-define:"
+	longOpt="help,verbose,kill,diagnostic,experimental,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:,script-define:,ignore-new-errors"
 
 	PARSED_ARGUMENTS=$(getopt -n DayZServerLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
@@ -154,6 +155,7 @@ function setupLaunchParameters() {
 		-P | --profile-folder) args+=("-profiles=$2")  ; shift ;;
 		-B | --battleye-path)  args+=("-BEpath=$2")    ; shift ;;
 		--script-define)       args+=("-scrDef=$2")    ; shift ;;
+		--ignore-new-errors)   args+=("-newErrorsAreWarning=1");;
 
 		--)
 			shift
