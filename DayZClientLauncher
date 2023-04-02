@@ -154,7 +154,7 @@ function setupLaunchParameters() {
 		-P | --profile-folder)   args+=("-profiles=$2")  ; shift ;;
 		-W | --world)            args+=("-world=$2")     ; shift ;;
 		--script-define)         args+=("-scrDef=$2")    ; shift ;;
-		--ignore-new-errors)     args+=("-newErrorsAreWarning=1");;
+		--ignore-new-errors)     args+=("-newErrorsAreWarnings=1");;
 		
 		--)
 			shift
