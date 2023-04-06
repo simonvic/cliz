@@ -254,8 +254,8 @@ if [ -z "$srcDir" ] && [ -z "$destDir" ] && [ "${#args[@]}" -eq 0 ]; then
 	exit 1
 fi
 
-: ${srcDir:?"A mod source directory MUST be defined!"}
-: ${destDir:?"A mod destination directory MUST be defined!"}
+${srcDir:?"A mod source directory MUST be defined!"}
+${destDir:?"A mod destination directory MUST be defined!"}
 
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 

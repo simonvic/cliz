@@ -1,6 +1,5 @@
 #!/bin/bash
 
-source config.sh
 source DayZLauncherUtil
 
 
@@ -80,13 +79,13 @@ function killProcess() {
 	local diagProcName=$DIAG_EXE
 
 	# if client process is alive, kill it
-	if [ ! -z "$(wFindProcess $clientProcName)" ]; then
+	if [[ -n $(wFindProcess "$clientProcName") ]]; then
 		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $clientProcName... "
 		wTaskKill "$clientProcName"
 	fi
 
 	# if diagnostic process is alive, kill it
-	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
+	if [[ -n $(wFindProcess "$diagProcName") ]]; then
 		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $diagProcName... "
 		wTaskKill "$diagProcName"
 	fi
@@ -173,7 +172,7 @@ function setupLaunchParameters() {
 	for mod in "${mods[@]}"; do
 		[[ -z "$modsArg" ]] && modsArg="-mod=$mod" || modsArg="$modsArg;$mod"
 	done
-	[[ ! -z "$modsArg" ]] && args+=("$modsArg")
+	[[ -n "$modsArg" ]] && args+=("$modsArg")
 }
 
 ##
@@ -208,6 +207,7 @@ function setupExecutables() {
 
 #############################################
 # MAIN
+parseCfg
 setupLaunchParameters "$@"
 setupExecutables
 [[ "$requestedKillProcess" = true ]] && killProcess
@@ -218,5 +218,5 @@ if [[ $verbosity -ge 4 ]]; then
 	echo cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}"
 fi
 # aah... the magic of windows cmd 
-cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}" &
+# cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}" &
 

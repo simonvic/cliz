@@ -26,10 +26,10 @@ function printFunctionBody() {
 	# get number of elements
 	ELEMENTS=${#args[@]}
 
-	for ((i = 0; i <= $ELEMENTS; i++)); do
+	for ((i = 0; i <= ELEMENTS; i++)); do
 		# replace dollar[0-ELEMENTS] with its variable
 		functionBody=${functionBody/\$\{$i\}/${args[${i}]}}
 	done
 
-	printf "$functionBody\n"
+	printf "%s\n" "$functionBody"
 }

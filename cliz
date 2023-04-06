@@ -1,0 +1,329 @@
+#!/bin/bash
+
+source DayZLauncherUtil
+
+##
+# @param mod id
+function addModToBuild() {
+	local mod=$(queryCfg "//*[@id='$1']")
+	local modType=$(queryCfg "name(/*)" "$mod")
+	case "$modType" in
+		workshop) : ;;
+		group)
+			local deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
+			if [[ -n "$deps" ]]; then
+				while read -r dep; do
+					addModToBuild "$dep"
+				done <<< "$deps"
+			fi
+			;;
+		mod) modsToBuild+=("$1") ;;
+			# local src=$(queryCfg "string(//@source)" "$mod")
+			# local dst=$(queryCfg "string(//@dir)" "$mod")
+			# modsPathToBuild["$src"]="$dst"
+	esac
+}
+
+##
+# @param mod id
+function addModToLaunch() {
+	local mod=$(queryCfg "//*[@id='$1']")
+	local modType=$(queryCfg "name(/*)" "$mod")
+	case "$modType" in
+		group) : ;;
+		workshop | mod) modsToLaunch+=("$1") ;;
+	esac
+	local deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
+	if [[ -n "$deps" ]]; then
+		while read -r dep; do
+			addModToLaunch "$dep"
+		done <<< "$deps"
+	fi
+}
+
+##
+# @param mod id
+function addModToLaunchServerSide() {
+	local mod=$(queryCfg "//*[@id='$1']")
+	local modType=$(queryCfg "name(/)" "$mod")
+	case "$modType" in
+		group) : ;;
+		mod | workshop)
+			local dir=$(queryCfg "/dir/text()" "$mod")
+			if [[ -z "$dir" ]]; then
+				printf "%s\n" "Directory for $1 is invalid or is not defined"
+				exit 1
+			fi
+			modsPathToLaunchServerSide+=("$dir")
+			;;
+	esac
+	local deps=$(queryCfgAttr "/deps/dep/@ref")
+	if [[ -n "$deps" ]]; then
+		while read -r dep; do
+			addModToLaunchServerSide "$dep"
+		done <<< "$deps"
+	fi
+}
+
+##
+# @return formatted mod arg (i.e. --mods=A;B;C;D)
+function getFormattedModsArgs() {
+	local modsArg=""
+	for mod in "${modsPathToLaunch[@]}"; do
+		[[ -z "$modsArg" ]] && modsArg="--mods=$mod" || modsArg="$modsArg;$mod"
+	done
+	printf "%s" "$modsArg"
+}
+
+# @return formatted mod arg (i.e. --server-mods=A;B;C;D)
+function getFormattedServerModsArgs() {
+	local modsArg=""
+	for mod in "${modsPathToLaunchServerSide[@]}"; do
+		[[ -z "$modsArg" ]] && modsArg="--server-mods=$mod" || modsArg="$modsArg;$mod"
+	done
+	printf "%s" "$modsArg"
+}
+
+function launchServer() {
+	DayZServerLauncher \
+		"${verbosityArgs[@]}" \
+		--do-logs \
+		--admin-log \
+		--net-log \
+		--freeze-check \
+		"${args[@]}" \
+		"${serverArgs[@]}" \
+		"$(getFormattedModsArgs)" \
+		"$(getFormattedServerModsArgs)" \
+		${serverMission:+--mission $serverMission} \
+		${serverConfig:+--config $serverConfig} \
+		${serverProfileFolder:+--profile-folder $serverProfileFolder}
+
+		if [[ ! "$serverMission" =~ "dayzOffline.chernarusplus" ]]; then
+			printf "%s\n" "Using custom mission. Remember to edit your serverDZ.cfg!"
+		fi
+}
+
+function launchClient() {
+	DayZClientLauncher \
+		"${verbosityArgs[@]}" \
+		--do-logs \
+		--script-debug \
+		--no-pause \
+		"${args[@]}" \
+		"${clientArgs[@]}" \
+		"$(getFormattedModsArgs)" \
+		${serverAddress:+--server-address $serverAddress} \
+		${profileName:+--name $profileName}
+}
+
+function buildMods() {
+	for source in "${!modsPathToBuild[@]}"; do
+		case "$builder" in
+		AddonBuilder)
+			DayZAddonBuilder \
+				"${verbosityArgs[@]}" \
+				--binarize-all-textures \
+				--extended-logs \
+				--clear-temp \
+				--dry-run \
+				--source "$source" \
+				--destination "${modsToBuild[$source]}" \
+				--prefix "${source/P:\\/}" \
+				--project-path "$source" \
+				--sign-with-copy "$privateKey" \
+				--include "P:\ADDON_BUILDER_DATA\toInclude.txt" \
+				--temp-folder "%TEMP%\dayzaddonbuilder"
+				
+			;;
+		pboProject)
+			DayZModBuilder -vvwSZRkF \
+				--no-pause \
+				-E "dayz" \
+				-m "$source" \
+				-M "${modsToBuild[$source]}"
+			;;
+		esac
+	done
+}
+
+OPTIONS=(
+	"h,help                       --Print this page and exit"
+	"v,verbose                    --Be verbose. Can be repeated for more verbosity"
+	"s,launch-server              --Launch the server"
+	"c,launch-client              --Launch the client"
+	"k,kill                       --Kill all game instances"
+	"b,build:mod                  --Specify mod to build. Can be repeated to build multiple mods"
+	"l,launch-mod:mod             --Specify mod to be loaded when launching game client/server"
+	"L,launch-mod-server:mod      --Specify mod to be loaded server side when launching game server"
+	"B,build-and-launch:mod       --Specify mod to build and to be loaded when launching game client/server"
+	"d,diagnostic                 --Use diagnostic executable"
+	"f,file-patching              --Enable file patching. Diagnostic exe will be used."
+	"e,experimental               --Use experimental version of the game client/server"
+	"script-define:define         --Pass a script define. Can be repeated for more"
+	"ignore-new-errors            --New errors are treated as warnings."
+)
+_OPTIONS=$(declare -p OPTIONS)
+
+function printUsage() {
+	mangen \
+		--name "${0##*/}" \
+		--options "$_OPTIONS" \
+		--command-width 35 \
+		--description-width 100 \
+		--new-line-indent 4
+}
+
+function parseArgs() {
+	local parsedArgs=$(getopt -n "${0##*/}" -o "$(mangen -so "$_OPTIONS")" --long "$(mangen -lo "$_OPTIONS")" -- "$@")
+	if [ "$?" != "0" ]; then
+		printUsage
+		exit 1
+	fi
+
+	eval set -- "$parsedArgs"
+
+	while true; do
+		case $1 in
+			-h | --help) printUsage; exit 1 ;;
+			-v | --verbose) verbosityArgs+=("--verbose") ;;
+			-s | --launch-server) willLaunchServer=true ;;
+			-c | --launch-client) willLaunchClient=true ;;
+			-k | --kill-game) args+=("--kill") ;;
+			-b | --build) modsToBuild+=("$2"); shift ;;
+			-l | --launch-mod) modsToLaunch+=("$2"); shift ;;
+			-L | --launch-mod-server) modsToLaunchServerSide+=("$2"); shift ;;
+			-B | --build-and-launch) modsToBuild+=("$2"); modsToLaunch+=("$2"); shift ;;
+			-f | --file-patching) args+=("--file-patching") ;;
+			-d | --diagnostic) args+=("--diagnostic") ;;
+			-e | --experimental) args+=("--experimental") ;;
+			--ignore-new-errors) args+=("--ignore-new-errors") ;;
+			--script-define) args+=("--script-define=$2"); shift ;;
+			--)
+				shift
+				break
+				;;
+			*)
+				echo "Invalid option: $1"
+				exit 1
+				;;
+			esac
+		shift #go to next arg
+	done
+
+}
+
+function queryCfg() {
+	xmllint --xpath "$1" - <<< "${2:-$clizCfg}" 2> /dev/null
+}
+
+function queryCfgAttr() {
+	queryCfg "$1" "$2" | cut -d '=' -f 2 | tr -d '"'
+}
+
+function parseConfig() {
+	clizCfg=$(xmllint "default-config.xml")
+	if [[ $? -eq 1 ]]; then
+		printf "%s\n" "Invalid config!"
+		exit 1
+	fi
+	local duplicate=$(queryCfg '//@id' | sort | uniq -d)
+	if [[ -n "$duplicate" ]]; then
+		printf "%s\n" "Found duplicate ids in default-config.xml:"
+		printf "%s\n" "$duplicate" | cut -d '"' -f2
+		printf "%s\n" "Fix your config before proceeding."
+		exit 1
+	fi
+	profileName=$(queryCfg '/config/client/profile-name/text()')
+	builder=$(queryCfg '/config/builder/name/text()')
+	privateKey=$(queryCfg '/config/builder/private-key/text()')
+	workshopDir=$(queryCfg '/config/workshop/dir/text()')
+}
+
+function debugConfigMod() {
+	local mod=$(queryCfg "//*[@id='$1']")
+	local deps=$(queryCfgAttr "//*[@id='$1']/deps/dep/@ref")
+	local depsDepth=${2:-0}
+	for i in $(seq "$depsDepth"); do
+		printf "\t"
+	done
+	printf "%s%s\n" "|_ " "$1"
+	if [[ -n "$deps" ]]; then
+		while read -r dep; do
+			debugConfigMod "$dep" "$((depsDepth + 1))"
+		done <<< "$deps"
+	fi
+}
+
+function debugConfig() {
+	printf "%s\n" "Client"
+	printf "%20s=%s\n" \
+		"dir" "$(queryCfg '/config/client/dir/text()')" \
+		"dir-exp" "$(queryCfg '/config/client/dir-exp/text()')" \
+		"profile-name" "$profileName"
+	printf "%s\n" "Server"
+	printf "%20s=%s\n" \
+		"dir" "$(queryCfg '/config/server/dir/text()')" \
+		"dir-exp" "$(queryCfg '/config/server/dir-exp/text()')"
+	printf "%s\n" "Builder"
+	printf "%20s=%s\n" \
+		"builder" "$builder" \
+		"private-key" "$privateKey" 
+	printf "%s\n" "Mods"
+	while read -r i; do
+		debugConfigMod "$i"
+	done <<< "$(queryCfgAttr '//@id')"
+}
+
+function debugArgs() {
+	if [[ ${#args[*]} -gt 0 ]]; then
+		printf "%s\n" "- ARGS"
+		printf "\t%s\n" "${args[@]}"
+	fi
+	if [[ ${#clientArgs[*]} -gt 0 ]]; then
+		printf "%s\n" "- CLIENT ARGS"
+		printf "\t%s\n" "${clientArgs[@]}"
+	fi
+	if [[ ${#serverArgs[*]} -gt 0 ]]; then
+		printf "%s\n" "- SERVER ARGS"
+		printf "\t%s\n" "${serverArgs[@]}"
+	fi
+	if [[ ${#modsToBuild[*]} -gt 0 ]]; then
+		printf "%s\n" "- MODS TO BUILD"
+		printf "\t- %s\n" "${modsToBuild[@]}"
+	fi
+	if [[ ${#modsToLaunch[*]} -gt 0 ]]; then
+		printf "%s\n" "- MODS TO LAUNCH"
+		printf "\t- %s\n" "${modsToLaunch[@]}"
+	fi
+	if [[ ${#modsToLaunchServerSide[*]} -gt 0 ]]; then
+		printf "%s\n" "- MODS TO LAUNCH SERVER SIDE"
+		printf "\t- %s\n" "${modsToLaunchServerSide[@]}"
+	fi
+}
+
+##############################################################
+## MAIN
+clizCfg=
+verbosityArgs=()
+modsToBuild=()              # array of mods to build
+modsToLaunch=()             # array of packed mods folder
+modsToLaunchServerSide=()   # array of packed mods folder to be loaded server side
+args=()
+serverArgs=()
+clientArgs=()
+
+parseConfig || exit 1
+parseArgs "$@"
+declare -A modsPathToBuild
+modsPathToLaunch=()
+modsPathToLaunchServerSide=()
+for i in "${modsToBuild[@]}"; do addModToBuild "$i"; done
+while read -r i; do addModToLaunch "$i"; done < <(printf "%s\n" "${modsToLaunch[@]}" | awk '!x[$0]++')
+while read -r i; do addModToLaunchServerSide "$i"; done < <(printf "%s\n" "${modsToLaunchServerSide[@]}" | awk '!x[$0]++')
+# debugConfig
+debugArgs
+# [[ ${#modsToBuild[*]} -gt 0 ]] && buildMods
+# [[ "$willLaunchServer" = true ]] && launchServer
+# [[ "$willLaunchClient" = true ]] && launchClient
+

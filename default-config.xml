@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<client>
+		<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ</dir>
+		<dir-exp>C:\Program Files (x86)\Steam\steamapps\common\DayZ Exp</dir-exp>
+		<exe>DayZ_x64.exe</exe>
+		<exe-diag>DayZDiag_x64.exe</exe-diag>
+		<profile-name>simonvic</profile-name>
+		<connect>127.0.0.1:2302</connect>
+	</client>
+	<server>
+		<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZServer</dir>
+		<dir-exp>C:\Program Files (x86)\Steam\steamapps\common\DayZ Server Exp</dir-exp>
+		<exe>DayZServer_x64.exe</exe>
+	</server>
+	<workshop>
+		<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ\!Workshop</dir>
+	</workshop>
+	<builder>
+		<!-- Available: AddonBuilder | pboProject -->
+		<name>AddonBuilder</name>
+
+		<!-- Path to your private key -->
+		<private-key>C:\Users\simon\Documents\Productivity\Programming\Dayz\Modding\Keys\simonvic\simonvic.biprivatekey</private-key>
+	</builder>
+
+	<mods>
+		<group id="sUDE">
+			<deps>
+				<dep ref="sFramework" />
+				<dep ref="sVisual" />
+				<dep ref="sGunplay" />
+			</deps>
+		</group>
+		<mod id="zDebug" source="P:\simonvic\zDebug" dir="P:\MyMODS_PACKED\@zDebug" />
+		<mod id="sFramework" source="P:\MyMODS\sFramework" dir="P:\MyMODS_PACKED\@sFramework" />
+		<mod id="sVisual" source="P:\MyMODS\sVisual" dir="P:\MyMODS_PACKED\@sVisual" />
+		<mod id="sGunplay" source="P:\MyMODS\sGunplay" dir="P:\MyMODS_PACKED\@sGunplay" />
+		<mod id="sInventory" source="P:\MyMODS\sInventory" dir="P:\MyMODS_PACKED\@sInventory" />
+		<mod id="sWeightPatch" source="P:\simonvic\sWeightPatch" dir="P:\MyMODS_PACKED\@sWeightPatch" />
+		<mod id="INeedGlasses" source="P:\MyMODS\INeedGlasses" dir="P:\MyMODS_PACKED\@INeedGlasses" />
+		<mod id="MorePPEExample" source="P:\MyMODS\MorePPEExample" dir="P:\MyMODS_PACKED\@MorePPEExample" />
+		<mod id="sVisual_CannabisPlus" source="P:\MyMODS\sVisual_CannabisPlus" dir="P:\MyMODS_PACKED\@sVisual_CannabisPlus">
+			<deps>
+				<dep ref="sVisual" />
+				<dep ref="cannabisPlus" />
+			</deps>
+		</mod>
+		<mod id="sVisual_SuppressionMod" source="P:\simonvic\sVisual_CompatibilityMods\sVisual_SuppressionMod" dir="P:\MyMODS_PACKED\@sVisual_SuppressionMod">
+			<deps>
+				<dep ref="sVisual" />
+				<dep ref="suppressionMod" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_HellRetex" source="P:\MyMODS\sGunplay_HellRetex" dir="P:\MyMODS_PACKED\@sGunplay_HellRetex">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="hellRetex" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_AWS" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_AWS" dir="P:\MyMODS_PACKED\@sGunplay_AWS">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="AWS" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_MMIO" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_MMIO" dir="P:\MyMODS_PACKED\@sGunplay_MMIO">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="MMIO" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_SNAFU" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_SNAFU" dir="P:\MyMODS_PACKED\@sGunplay_SNAFU">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="SNAFU" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_FLAVA" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_FLAVA" dir="P:\MyMODS_PACKED\@sGunplay_FLAVA">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="FLAVA" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_MORTY" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_MORTY" dir="P:\MyMODS_PACKED\@sGunplay_MORTY">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="MORTY" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_EDO" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_EDO" dir="P:\MyMODS_PACKED\@sGunplay_EDO">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="EDO" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_SQUADMSFC" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_SQUADMSFC" dir="P:\MyMODS_PACKED\@sGunplay_SQUADMSFC">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="SQUAD" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_INTENZ" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_INTENZ" dir="P:\MyMODS_PACKED\@sGunplay_INTENZ">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="intenz" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_ARZ" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_ARZ" dir="P:\MyMODS_PACKED\@sGunplay_ARZ">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="ARZ" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_FOX" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_FOX" dir="P:\MyMODS_PACKED\@sGunplay_FOX">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="FOX" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_RevScopes" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_RevScopes" dir="P:\MyMODS_PACKED\@sGunplay_RevScopes">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="revScopes" />
+			</deps>
+		</mod>
+		<mod id="sGunplay_STALKERZ" source="P:\simonvic\sGunplay_CompatibilityMods\sGunplay_STALKERZ" dir="P:\MyMODS_PACKED\@sGunplay_STALKERZ">
+			<deps>
+				<dep ref="sGunplay" />
+				<dep ref="stalkerztest" />
+			</deps>
+		</mod>
+		<mod id="sVisual_Namalsk" source="P:\MyMODS\sVisual_Namalsk" dir="P:\MyMODS_PACKED\@sVisual_Namalsk">
+			<deps>
+				<dep ref="sVisual" />
+				<dep ref="Namalsk" />
+			</deps>
+		</mod>
+		<mod id="salern" source="P:\simonvic\salern" dir="P:\MyMODS_PACKED\@salern" />
+		<mod id="sWeb" source="P:\simonvic\sWeb" dir="P:\MyMODS_PACKED\@sWeb" />
+		<mod id="luca" dir="P:\MyMODS_PACKED\@luca1" />
+		<mod id="stalkerztest" dir="P:\MyMODS_PACKED\@stalkerztest" />
+
+		<workshop id="SQUAD" dir="@SQUAD MSF-C" />
+		<workshop id="ARMA2" dir="@ArmA 2 ACR Weapon Pack" />
+		<workshop id="PVZ" dir="@PvZmoD_CustomisableZombies" />
+		<workshop id="revGuns" dir="@RevGuns" />
+		<workshop id="KK" dir="@KarmaKrew" />
+		<workshop id="hellRetex" dir="@HellRetex Weapons" />
+		<workshop id="nextDays" dir="@Next Days" />
+		<workshop id="deadAir" dir="@DEAD AIR (Weapon Pack STALKER)" />
+		<workshop id="SNAFU" dir="@SNAFU Weapons" />
+		<workshop id="FLAVA" dir="@Tactical Flava" />
+		<workshop id="MORTY" dir="@Mortys Weapons" />
+		<workshop id="codelock" dir="@Code Lock" />
+		<workshop id="windstride" dir="@WindstridesClothingPack" />
+		<workshop id="muchstuffpack" dir="@MuchStuffPack" />
+		<workshop id="ammunitionexpansion" dir="@AmmunitionExpansion" />
+		<workshop id="ARZ" dir="@ArzzzWeapons" />
+		<workshop id="FOX" dir="@FOX WEAPONS 2.0" />
+		<workshop id="revScopes" dir="@RevScopes" />
+		<workshop id="CF" dir="@CF" />
+		<workshop id="CF_exp" dir="@CF-Test" />
+		<workshop id="COT" dir="@Community-Online-Tools" />
+		<workshop id="zomberry" dir="@ZomBerry Admin Tools" />
+		<workshop id="dabsFramework" dir="@Dabs Framework" />
+		<workshop id="editor" dir="@DayZ Editor" />
+		<workshop id="builderItems" dir="@BuilderItems" />
+		<workshop id="VPP" dir="@VPPAdminTools" />
+		<workshop id="VPP_exp" dir="@VPPAdminTools-EXP" />
+		<workshop id="MMIO" dir="@Mass'sManyItemOverhaul" />
+		<workshop id="AWS" dir="@Advanced Weapon Scopes" />
+		<workshop id="dabsf" dir="@Dabs Framework" />
+		<workshop id="cannabisPlus" dir="@CannabisPlus" />
+		<workshop id="gasmaskaddons" dir="@GasMaskAddons" />
+		<workshop id="nostamina" dir="@Unlimited Stamina" />
+		<workshop id="suppressionMod" dir="@Suppression Mod" />
+		<workshop id="stalkerzwepserver" dir="@stalkerzserver" />
+		<workshop id="expansionCore" dir="@DayZ-Expansion-Core" />
+		<workshop id="expansionLicensed" dir="@DayZ-Expansion-Licensed" />
+		<workshop id="expansionAnimations" dir="@DayZ-Expansion-Animations" />
+		<workshop id="expansionWeapons" dir="@DayZ-Expansion-Weapons" />
+		<workshop id="expansionVehicles" dir="@DayZ-Expansion-Vehicles" />
+		<workshop id="expansionBookExp" dir="@DayZ-Expansion-Book-Experimental" />
+		<workshop id="expansionCoreExp" dir="@DayZ-Expansion-Core-Experimental" />
+		<workshop id="expansionLicensedExp" dir="@DayZ-Expansion-Licensed-Experimental" />
+		<workshop id="expansionVehiclesExp" dir="@DayZ-Expansion-Vehicles-Experimental" />
+		<workshop id="expansionExp" dir="@DayZ-Expansion-Experimental" />
+		<workshop id="namalskIsland" dir="@Namalsk Island" />
+		<workshop id="namalskSurvival" dir="@Namalsk Survival" />
+		<workshop id="stalkerzDayzone" dir="@StalkerZ DayZone" />
+		<workshop id="stalkerzMutants" dir="@StalkerZ Mutants" />
+		<workshop id="stalkerzInventory" dir="@StalkerZ View Inventory Animation" />
+		<workshop id="stalkerzWeapons" dir="@StalkerZ Weapons" />
+		<workshop id="intenz" dir="@IntenZ-Pack">
+			<deps>
+				<dep ref="windstride" />
+				<dep ref="codelock" />
+				<dep ref="muchstuffpack" />
+			</deps>
+		</workshop>
+		<workshop id="EDO" dir="@EDO_WEAPONS">
+			<deps>
+				<dep ref="ammunitionexpansion" />
+			</deps>
+		</workshop>
+		<workshop id="takistanPlus" dir="@TakistanPlus">
+			<deps>
+				<dep ref="dabsf" />
+			</deps>
+		</workshop>
+		<workshop id="radZone" dir="@RadZone">
+			<deps>
+				<dep ref="gasmaskaddons" />
+			</deps>
+		</workshop>
+		<group id="Expansion">
+			<deps>
+				<dep ref="dabsf" />
+				<dep ref="expansionCore" />
+				<dep ref="expansionLicensed" />
+				<dep ref="expansionVehicles" />
+				<dep ref="expansionAnimations" />
+				<dep ref="expansionWeapons" />
+			</deps>
+		</group>
+		<group id="ExpansionExp">
+			<deps>
+				<dep ref="dabsf" />
+				<dep ref="expansionCoreExp" />
+				<dep ref="expansionLicensed" />
+				<dep ref="expansionVehiclesExp" />
+				<dep ref="expansionBookExp" />
+				<dep ref="expansionExp" />
+			</deps>
+		</group>
+		<group id="Namalsk awf">
+			<dep ref="namalskIsland" />
+			<dep ref="namalskSurvival" />
+		</group>
+		<group id="Stalkerzwep awf">
+			<deps>
+				<dep ref="stalkerzDayzone" />
+				<dep ref="stalkerzMutants" />
+				<dep ref="codelock" />
+				<dep ref="stalkerzInventory" />
+				<dep ref="stalkerzWeapons" />
+			</deps>
+		</group>
+	</mods>
+</config>
