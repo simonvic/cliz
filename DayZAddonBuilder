@@ -2,13 +2,10 @@
 
 source DayZLauncherUtil
 
-DAYZ_TOOLS="C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools"
-ADDON_BUILDER_EXE="$DAYZ_TOOLS\Bin\AddonBuilder\AddonBuilder.exe"
-
+addonBuilderExe=$(xmllint "/home/simonvic/Documents/Productivity/Programming/scripts/cliz/default-config.xml" --xpath '/config/tools/addonbuilder/text()')
 args=()
 srcDir=""
 destDir=""
-privateKey=""
 
 ##
 # 0 = no output
@@ -23,7 +20,7 @@ dryRun=false
 function printUsage() {
 	printf "
 - Usage
-	DayZModBuilder [-hvocbl] [-s sourcePath] [-d destinationPath] [-t tempFolderPath] [-p addonPrefix] [-P projectPath] [-k privateKey] [-K privateKey] [-i filesToInclude] [-e filesToExclude] [-V pboVersion] [-B binarize.exe] [-C cfgConvert.exe] [-F filebank.exe] [-D dssignfile.exe] [-T dayzToolsPath] 
+	DayZAddonBuilder [-hvocbl] [-s sourcePath] [-d destinationPath] [-t tempFolderPath] [-p addonPrefix] [-P projectPath] [-k privateKey] [-K privateKey] [-i filesToInclude] [-e filesToExclude] [-V pboVersion] [-B binarize.exe] [-C cfgConvert.exe] [-F filebank.exe] [-D dssignfile.exe] [-T dayzToolsPath] 
 	
 - Options
 	-h, --help                             Show this help.
@@ -103,7 +100,7 @@ function setupLaunchParameters() {
 	shortOpt="hvocbls:d:t:p:P:k:K:i:e:V:B:C:F:D:T:"
 	longOpt="help,verbose,only-pack,clear-temp,binarize-all-textures,extended-logs,source:,destination:,temp-folder:,prefix:,project-path:,sign-with:,sign-with-copy:,include:,exclude:,pbo-version:,binarize-exe:,cfgConvert-exe:,filebank-exe:,dssignfile-exe:,dayz-tools:,dry-run"
 
-	PARSED_ARGUMENTS=$(getopt -n DayZModBuilder -o ${shortOpt} --long ${longOpt} -- "$@")
+	PARSED_ARGUMENTS=$(getopt -n DayZAddonBuilder -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
 		printUsage
 		exit 1
@@ -127,8 +124,8 @@ function setupLaunchParameters() {
 		-t | --temp-folder)           args+=("-temp=$2")                       ; shift ;;
 		-p | --prefix)                args+=("-prefix=$2")                     ; shift ;;
 		-P | --project-path)          args+=("-project=$2")                    ; shift ;;
-		-k | --sign-with)             privateKey="$2"                           ; shift ;;
-		-K | --sign-with-copy)        privateKey="$2" && willCopyKey=true       ; shift ;;
+		-k | --sign-with)             privateKey="$2"                          ; shift ;;
+		-K | --sign-with-copy)        privateKey="$2" && willCopyKey=true      ; shift ;;
 		-i | --include)               args+=("-include=$2")                    ; shift ;;
 		-V | --pbo-version)           args+=("-pboversion=$2")                 ; shift ;;
 		-B | --binarize-exe)          args+=("-binarize=$2")                   ; shift ;;
@@ -155,7 +152,7 @@ function setupLaunchParameters() {
 		shift #go to next arg
 	done
 
-	[[ ! -z "$privateKey" ]] && args+=("-sign=$privateKey")
+	[[ -n "$privateKey" ]] && args+=("-sign=$privateKey")
 }
 
 
@@ -163,7 +160,7 @@ function setupLaunchParameters() {
 #	Print information on parameters used when executing the command
 function printLaunchParameters() {
 	printf "%s\n" "> LAUNCHING ADDON BUILDER"
-	[[ $verbosity -ge 4 ]] && printf "%s\n" "> EXE: $ADDON_BUILDER_EXE"
+	[[ $verbosity -ge 4 ]] && printf "%s\n" "> EXE: $addonBuilderExe"
 	if [[ $verbosity -ge 1 ]]; then
 		printf "\t%s\n" "- SOURCE:      ${srcDir}"
 		printf "\t%s\n" "- DESTINATION: ${destDir}"
@@ -181,17 +178,17 @@ function printLaunchParameters() {
 function startAddonBuilderGUI() {
 	if [[ $verbosity -ge 4 ]]; then
 		printf "\t%s" "> COMMAND: "
-		echo cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}"
+		echo cmd.exe "/c" "cd" "/D" "${addonBuilderExe%\\*}" "&&" ".\\${addonBuilderExe##*\\}"
 	fi
-	[[ "$dryRun" == false ]] && cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}"
+	[[ "$dryRun" == false ]] && cmd.exe "/c" "cd" "/D" "${addonBuilderExe%\\*}" "&&" ".\\${addonBuilderExe##*\\}"
 }
 
 function startAddonBuild() {
 	if [[ $verbosity -ge 4 ]]; then
 		printf "\t%s" "> COMMAND: "
-		echo cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$srcDir" "$destDir\Addons" "${args[@]}"
+		echo cmd.exe "/c" "cd" "/D" "${addonBuilderExe%\\*}" "&&" ".\\${addonBuilderExe##*\\}" "$srcDir" "$destDir\Addons" "${args[@]}"
 	fi
-	[[ "$dryRun" == false ]] && cmd.exe "/c" "cd" "/D" "${ADDON_BUILDER_EXE%\\*}" "&&" ".\\${ADDON_BUILDER_EXE##*\\}" "$srcDir" "$destDir\Addons" "${args[@]}"
+	[[ "$dryRun" == false ]] && cmd.exe "/c" "cd" "/D" "${addonBuilderExe%\\*}" "&&" ".\\${addonBuilderExe##*\\}" "$srcDir" "$destDir\Addons" "${args[@]}"
 }
 
 function copyKey() {
@@ -254,8 +251,8 @@ if [ -z "$srcDir" ] && [ -z "$destDir" ] && [ "${#args[@]}" -eq 0 ]; then
 	exit 1
 fi
 
-${srcDir:?"A mod source directory MUST be defined!"}
-${destDir:?"A mod destination directory MUST be defined!"}
+: ${srcDir:?"A mod source directory MUST be defined!"}
+: ${destDir:?"A mod destination directory MUST be defined!"}
 
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 

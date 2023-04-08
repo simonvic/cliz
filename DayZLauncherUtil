@@ -1,35 +1,64 @@
 #!/bin/bash
 
-function wStart() {
-	# lol...
-	cmd.exe /c start "" "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}"
+clizCfgPath=${XDG_CONFIG_HOME:-$HOME/.config}/cliz/config.xml
+clizCfg=""
+
+##
+# @param xpath
+# @param xml data default: cliz cfg
+function queryCfg() {
+	xmllint --xpath "$1" - <<< "${2:-$clizCfg}" 2> /dev/null
 }
 
+##
+# @param xpath
+# @param xml data default: cliz cfg
+function queryCfgAttr() {
+	queryCfg "$1" "$2" | cut -d '=' -f 2 | tr -d '"'
+}
+
+##
+# Windows, make directory
+# @param directory
 function wMkdir(){
 	cmd.exe /c "if" "not" "exist" "${1}" mkdir "${1}"
 }
 
-function wFindProcess() {
-	tasklist.exe /NH | findstr.exe /I "$1"
+##
+# Find Windows process
+# @param Get-WmiObject filter
+# @return pid
+function wFindPid() {
+	powershell.exe "Get-WmiObject win32_process -Filter \"$1\" | Select-Object -First 1 -ExpandProperty processid" | tr -d -c 0-9
 }
 
+##
+# Kill windows process
+# @param pid
 function wTaskKill() {
-	taskkill.exe /F /IM "$1" /T
+	taskkill.exe /F /PID "$1" /T
 }
 
-function printFunctionBody() {
-	# get the body (with dollars)
-	local functionBody="$(type "$1" | sed '1,3d;$d')"
 
-	# array of args
-	args=("$@")
-	# get number of elements
-	ELEMENTS=${#args[@]}
-
-	for ((i = 0; i <= ELEMENTS; i++)); do
-		# replace dollar[0-ELEMENTS] with its variable
-		functionBody=${functionBody/\$\{$i\}/${args[${i}]}}
-	done
-
-	printf "%s\n" "$functionBody"
+##
+# 
+function readCfg() {
+	if [[ ! -e "$clizCfgPath"  ]]; then
+		printf "%s\n" "Can't load config file: $clizCfgPath"
+		exit 1
+	fi
+	clizCfg=$(xmllint "$clizCfgPath")
+	if [[ $? -eq 1 ]]; then
+		printf "%s\n" "Invalid config!"
+		exit 1
+	fi
+	local duplicate=$(queryCfg '//@id' | sort | uniq -d)
+	if [[ -n "$duplicate" ]]; then
+		printf "%s\n" "Found duplicate ids in default-config.xml:"
+		printf "%s\n" "$duplicate" | cut -d '"' -f2
+		printf "%s\n" "Fix your config before proceeding."
+		exit 1
+	fi
 }
+
+readCfg

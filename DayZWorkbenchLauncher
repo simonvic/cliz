@@ -86,13 +86,7 @@ function addMod() {
 	fi
 }
 
-function launchWorkbench() {
-	# Don't ask me why... cd is needed
-	cmd.exe /c "START" "/D" "${1}" ".\\${2}" "${3}"
-	#cmd.exe /c "cd" "/D" "${1}" "&&" "START" ".\\${2}" "${3}"
-}
-
 setupLaunchParameters "$@"
 
-[[ $verbosity -ge 2 ]] && printFunctionBody launchWorkbench "${WORKBENCH_EXE%\\*}" "${WORKBENCH_EXE##*\\}" "$argMods"
-launchWorkbench "${WORKBENCH_EXE%\\*}" "${WORKBENCH_EXE##*\\}" "$argMods"
+[[ $verbosity -ge 2 ]] && echo "cmd.exe" "/c" "START" "/D" "${WORKBENCH_EXE%\\*}" ".\\${WORKBENCH_EXE##*\\}" "$argMods"
+cmd.exe /c "START" "/D" "${WORKBENCH_EXE%\\*}" ".\\${WORKBENCH_EXE##*\\}" "$argMods"

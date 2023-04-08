@@ -1,9 +1,15 @@
 #!/bin/bash
 
-source config.sh
 source DayZLauncherUtil
 
-########################################################
+serverDir=$(queryCfg "/config/server/dir/text()")
+serverDirExp=$(queryCfg "/config/server/dir-exp/text()")
+serverExe=$(queryCfg "/config/server/exe/text()")
+clientDir=$(queryCfg "/config/client/dir/text()")
+clientDirExp=$(queryCfg "/config/client/dir-exp/text()")
+clientExeDiag=$(queryCfg "/config/client/exe-diag/text()")
+dir=$serverDir
+exe=$serverExe
 
 ##
 # 0 = no output
@@ -14,8 +20,6 @@ source DayZLauncherUtil
 verbosity=0
 useExperimental=false
 useDiag=false
-dir=$DIR
-exe=$EXE
 args=()
 mods=()
 serverMods=()
@@ -76,24 +80,23 @@ function printUsage() {
 }
 
 ##
-#	Kill all Dayz related processes (exe and diagnostic exe)
+# @param process name query
 function killProcess() {
+	local pid=$(wFindPid "$1")
+	if [[ -n "$pid" ]]; then
+		[[ $verbosity -ge 1 ]] && printf "\t%s\n" "> Killing $1 $pid ..."
+		wTaskKill "$pid"
+	else
+		[[ $verbosity -ge 1 ]] && printf "\t%s\n" "> Process not found: $1"
+	fi
+}
+
+##
+#	Kill all Dayz related processes (exe and diagnostic exe)
+function killAllProcesses() {
 	printf "%s\n" "> KILLING PROCESSES"
-	local serverProcName=$SERVER_EXE
-	local diagProcName=$DIAG_EXE
-
-	# if server process is alive, kill it
-	if [ ! -z "$(wFindProcess $serverProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $serverProcName... "
-		wTaskKill "$serverProcName"
-	fi
-
-	# if diagnostic process is alive, kill it
-	if [ ! -z "$(wFindProcess $diagProcName)" ]; then
-		[[ $verbosity -ge 1 ]] && printf "%s" "Killing $diagProcName... "
-		wTaskKill "$diagProcName"
-	fi
-
+	killProcess "commandline LIKE '$serverExe%'"
+	killProcess "commandline LIKE '$clientExeDiag%-server%'"
 }
 
 ##
@@ -174,13 +177,13 @@ function setupLaunchParameters() {
 	for mod in "${mods[@]}"; do
 		[[ -z "$modsArg" ]] && modsArg="-mod=$mod" || modsArg="$modsArg;$mod"
 	done
-	[[ ! -z "$modsArg" ]] && args+=("$modsArg")
+	[[ -n "$modsArg" ]] && args+=("$modsArg")
 
 	local serverModsArg=""
 	for mod in "${serverMods[@]}"; do
 		[[ -z "$serverModsArg" ]] && serverModsArg="-serverMod=$mod" || serverModsArg="$serverModsArg;$mod"
 	done
-	[[ ! -z "$serverModsArg" ]] && args+=("$serverModsArg")
+	[[ -n "$serverModsArg" ]] && args+=("$serverModsArg")
 
 }
 
@@ -202,16 +205,14 @@ function printLaunchParameters() {
 	if [[ ${#mods[*]} -gt 0 ]]; then
 		printf "\t%s\n" "- MODS:"
 		for mod in "${mods[@]}"; do
-			local formattedMod=$(printf "%s" "$mod" | sed 's/;/\n\t\t/g')
-			printf "\t\t%s\n" "$formattedMod"
+			printf "\t\t%s\n" "$(printf "%s" "$mod" | sed 's/;/\n\t\t/g')"
 		done
 	fi
 
 	if [[ ${#serverMods[*]} -gt 0 ]]; then
 		printf "\t%s\n" "- SERVER MODS:"
 		for serverMod in "${serverMods[@]}"; do
-			local formattedMod=$(printf "%s" "$serverMod" | sed 's/;/\n\t\t/g')
-			printf "\t\t%s\n" "$formattedMod"
+			printf "\t\t%s\n" "$(printf "%s" "$serverMod" | sed 's/;/\n\t\t/g')"
 		done
 	fi
 }
@@ -221,19 +222,19 @@ function printLaunchParameters() {
 function setupExecutables() {
 	if [[ $useExperimental == true ]]; then
 		if [[ $useDiag == true ]]; then
-			dir="$CLIENT_INSTALL_DIR_EXP"  # diagnostic executable is shipped only with client
-			exe="$DIAG_EXE"
+			dir="$clientDirExp"  # diagnostic executable is shipped only with client
+			exe="$clientExeDiag"
 		else
-			dir="$SERVER_INSTALL_DIR_EXP"
-			exe="$SERVER_EXE"
+			dir="$serverDirExp"
+			exe="$serverExe"
 		fi
 	else
 		if [[ $useDiag == true ]]; then
-			dir="$CLIENT_INSTALL_DIR"  # diagnostic executable is shipped only with client
-			exe="$DIAG_EXE"
+			dir="$clientDir"  # diagnostic executable is shipped only with client
+			exe="$clientExeDiag"
 		else
-			dir="$SERVER_INSTALL_DIR"
-			exe="$SERVER_EXE"
+			dir="$serverDir"
+			exe="$serverExe"
 		fi
 	fi
 }
@@ -241,11 +242,11 @@ function setupExecutables() {
 # MAIN
 setupLaunchParameters "$@"
 setupExecutables
-[[ "$requestedKillProcess" = true ]] && killProcess
+[[ $requestedKillProcess == true ]] && killAllProcesses
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 
 if [[ $verbosity -ge 4 ]]; then
 	printf "\t%s" "> COMMAND: "
 	echo cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}"
 fi
-# cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}" &
+cmd.exe /c "cd" "/d" "$dir" "&&" "START" "$exe" "${args[@]}" &
