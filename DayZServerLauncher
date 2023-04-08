@@ -187,6 +187,18 @@ function parseArgs() {
 			esac
 		shift #go to next arg
 	done
+
+	local modsArg=""
+	for mod in "${mods[@]}"; do
+		[[ -z "$modsArg" ]] && modsArg="-mod=$mod" || modsArg="$modsArg;$mod"
+	done
+	[[ -n "$modsArg" ]] && args+=("$modsArg")
+	local serverModsArg=""
+	for mod in "${serverMods[@]}"; do
+		[[ -z "$serverModsArg" ]] && serverModsArg="-serverMod=$mod" || serverModsArg="$serverModsArg;$mod"
+	done
+	[[ -n "$serverModsArg" ]] && args+=("$serverModsArg")
+
 }
 
 ###############################################################################
