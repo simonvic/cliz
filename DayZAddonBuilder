@@ -97,16 +97,16 @@ function printUsage() {
 }
 
 function setupLaunchParameters() {
-	shortOpt="hvocbls:d:t:p:P:k:K:i:e:V:B:C:F:D:T:"
-	longOpt="help,verbose,only-pack,clear-temp,binarize-all-textures,extended-logs,source:,destination:,temp-folder:,prefix:,project-path:,sign-with:,sign-with-copy:,include:,exclude:,pbo-version:,binarize-exe:,cfgConvert-exe:,filebank-exe:,dssignfile-exe:,dayz-tools:,dry-run"
+	local shortOpt="hvocbls:d:t:p:P:k:K:i:e:V:B:C:F:D:T:"
+	local longOpt="help,verbose,only-pack,clear-temp,binarize-all-textures,extended-logs,source:,destination:,temp-folder:,prefix:,project-path:,sign-with:,sign-with-copy:,include:,exclude:,pbo-version:,binarize-exe:,cfgConvert-exe:,filebank-exe:,dssignfile-exe:,dayz-tools:,dry-run"
 
-	PARSED_ARGUMENTS=$(getopt -n DayZAddonBuilder -o ${shortOpt} --long ${longOpt} -- "$@")
+	local parsedArgs=$(getopt -n DayZAddonBuilder -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
 		printUsage
 		exit 1
 	fi
 
-	eval set -- "$PARSED_ARGUMENTS"
+	eval set -- "$parsedArgs"
 
 	while true; do
 		case $1 in

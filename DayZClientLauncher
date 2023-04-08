@@ -115,16 +115,16 @@ function useFilePatching() {
 ##
 #	
 function setupLaunchParameters() {
-	shortOpt="hvkdeswflBEn:m:a:p:c:D:X:M:P:W:"
-	longOpt="help,verbose,kill,diagnostic,experimental,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:,script-define:,ignore-new-errors"
+	local shortOpt="hvkdeswflBEn:m:a:p:c:D:X:M:P:W:"
+	local longOpt="help,verbose,kill,diagnostic,experimental,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:,script-define:,ignore-new-errors"
 
-	PARSED_ARGUMENTS=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
+	local parsedArgs=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
 		printUsage
 		exit 1
 	fi
 
-	eval set -- "$PARSED_ARGUMENTS"
+	eval set -- "$parsedArgs"
 
 	while true; do
 		case $1 in

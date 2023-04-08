@@ -30,29 +30,20 @@ function setupLaunchParameters() {
 	local shortOpt="hvm:X:"
 	local longOpt="help,verbose,mods:,exe:,script-define:"
 
-	PARSED_ARGUMENTS=$(getopt -n DayZWorkbenchLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
+	local parsedArgs=$(getopt -n DayZWorkbenchLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
 	if [ "$?" != "0" ]; then
 		printUsage
 		exit 1
 	fi
 
-	eval set -- "$PARSED_ARGUMENTS"
+	eval set -- "$parsedArgs"
 
 	while true; do
 		case $1 in
-		-h | --help)
-			printUsage
-			exit 1
-			;;
-		-v | --verbose) verbosity=$((verbosity + 1)) ;;
-		-m | --mods)
-			addMod "$2"
-			shift
-			;;
-		-X | --exe)
-			setWorkbenchExe "$2"
-			shift
-			;;
+		-h | --help) printUsage; exit 1 ;;
+		-v | --verbose) ((verbosity + 1)) ;;
+		-m | --mods) addMod "$2"; shift ;;
+		-X | --exe) setWorkbenchExe "$2"; shift ;;
 		--)
 			shift
 			break
