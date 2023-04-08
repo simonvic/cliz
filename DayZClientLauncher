@@ -17,57 +17,6 @@ useDiag=false
 args=()
 mods=()
 
-##
-#	Print script usage
-function printUsage() {
-	printf "%s" "
-- Usage
-	DayZClientLauncher [-hvkdewflsBE] [-n name] [-m modsList] [-a serverAddress:port] [-p password] [-c coresNumber] [-D directory] [-X exeFile] [-M mission] [-P profileFolder] [-W world]
-	
-- Options
-	-h, --help                             Show this help.
-	-v, --verbose                          Be verbose. Can be repeated for more verbosity
-	-k, --kill                             Kill active processes before starting a new one
-	-e, --experimental                     Use experimental executable.
-	-d, --diagnostic                       Use diagnostic executable.
-	-w, --windowed                         Runs the game in windowed mode
-	-n, --name <name>                      Selects a profile from profiles folder with the 
-	                                        given name (also in-game nickname)
-
-	-f, --file-patching                    Ensures that only PBOs are loaded
-	                                        and NO unpacked data.
-	-B, --buldozer                         Starts the game in bulldozer mode.
-	-E, --no-pause                         Allows the game to run even when its window does not have focus.
-	-l, --do-logs                          Enables all log messages in the server RPT file.
-	-s, --script-debug                     Enable script debug
-	-m, --mods <mods>                      Loads the specified sub-folders for different mods.
-	                                        Separated by semi-colons. Absolute path and 
-	                                        multiple stacked folders are possible.
-
-	-a, --server-address <address:port>    Connects to this server with this IP address or
-	                                        or domain name and port
-
-	-p, --server-password <password>      Uses this server passoword, if required
-	-c, --cpu-count <cores number>         Sets the number of logical CPU cores to use for
-	                                        parallel tasks processing. It should be less or
-	                                        equal than the numbers of available cores.
-
-	-D, --dir <exe directory>              Selects where the executables are found
-	-X, --exe <exe file>                   Selects what executable file to be used
-	-M, --mission <mission>                Selects what mission to use.
-	-P, --profile-folder <profile>         Path to the folder containing server profile. By default, 
-	                                        server logs are written to server profile folder. 
-	                                        Logs/dumps/etc will be created there, along with 
-	                                        BattlEye/BEC/Rcon related files. Windows Environment 
-	                                        variables are supported. E.g. &ampuserprofile&amp
-
-	-W, --world <world>                    Selects a game world to be loaded by default
-	    --script-define <define>           Specify to load a script preprocessor define.
-	                                        Can be repeated to define more.
-	    --ignore-new-errors                Newly added game / script errors are treated as warning.
-
-"
-}
 
 
 ##
@@ -98,22 +47,86 @@ function useFilePatching() {
 }
 
 ##
-#	
-function setupLaunchParameters() {
-	local shortOpt="hvkdeswflBEn:m:a:p:c:D:X:M:P:W:"
-	local longOpt="help,verbose,kill,diagnostic,experimental,script-debug,windowed,file-patching,do-logs,buldozer,no-pause,name:,mods:,server-address:,server-password:,cpu-count:,dir:,exe:,mission:,profile-folder:,world:,script-define:,ignore-new-errors"
-
-	local parsedArgs=$(getopt -n DayZClientLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
-	if [ "$?" != "0" ]; then
-		printUsage
-		exit 1
+#	Print information on parameters used when executing the command
+function printLaunchParameters() {
+	printf "%s\n" "> LAUNCHING CLIENT"
+	if [[ $verbosity -ge 3 ]]; then
+		printf "\t%s\n" "- DIR: $dir"
+		printf "\t%s\n" "- EXE: $exe"
 	fi
+	if [[ $verbosity -ge 2 ]]; then
+		printf "\t%s\n" "- ARGUMENTS:"
+		for arg in "${args[@]}"; do
+			printf "\t\t%s\n" "$arg"
+		done
+	fi
+	if [[ ${#mods[*]} -gt 0 ]]; then
+		printf "\t%s\n" "- MODS:"
+		for mod in "${mods[@]}"; do
+			printf "\t\t%s\n" "$(printf "%s" "$mod" | sed 's/;/\n\t\t/g')"
+		done
+	fi
+}
 
+##
+#	Setup directory and executables based on the flag given
+function setupExecutables() {
+	[[ $useExperimental == true ]] && dir=$clientDirExp
+	[[ $useDiag == true ]] && exe=$clientExeDiag
+}
+
+options=(
+	"h,help                         --Print this page and exit"
+	"v,verbose                      --Be verbose. Can be repeated for more verbosity"
+	"k,kill                         --Kill active processes before starting a new one"
+	"e,experimental                 --Use experimental executable"
+	"d,diagnostic                   --Use diagnostic executable"
+	"w,windowed                     --Runs the game in windowed mode"
+	"n,name:name                    --Selects a profile from profiles folder with the given name (also in-game name)"
+	"f,file-patching                --Ensures that only PBOs are loaded and NO unpacked data."
+	"B,buldozer                     --Starts the game in bulldozer mode."
+	"E,no-pause                     --Allows the game to run even when its window does not have focus."
+	"l,do-logs                      --Enables all log messages in the server RPT file."
+	"s,script-debug                 --Enable script debug"
+	"m,mods:mods                    --Loads the specified sub-folders for different mods.
+	                                    Separated by semi-colons.
+	                                    Absolute path and multiple stacked folders are possible."
+	"a,server-address:address:port  --Connects to this server with this IP address or domain name and port"
+	"p,server-password:password     --Uses this server passoword, if required"
+	"c,cpu-count:cores-number       --Sets the number of logical CPU cores to use for parallel tasks processing.
+	                                    It should be less or equal than the numbers of available cores."
+	"D,dir:exe-directory            --Selects where the executables are found"
+	"X,exe:exe-file                 --Selects what executable file to be used"
+	"M,mission:mission              --Selects what mission to use."
+	"P,profile-folder:profile       --Path to the folder containing server profile.
+	                                    By default, server logs are written to server profile folder. 
+	                                    Logs/dumps/etc will be created there, along with BattlEye/BEC/Rcon related files.
+	                                    Windows Environment variables are supported. E.g. &ampuserprofile&amp"
+	"W,world:world                  --Selects a game world to be loaded by default"
+	"script-define:define           --Specify to load a script preprocessor define.
+	                                    Can be repeated to define more."
+	"ignore-new-errors              --Newly added game / script errors are treated as warning."
+)
+_options=$(declare -p options)
+
+function printUsage() {
+	mangen \
+		--name "${0##*/}" \
+		--options "$_options" \
+		--command-width 40 \
+		--description-width 80 \
+		--new-line-indent 4
+}
+
+function parseArgs() {
+	local parsedArgs
+	parsedArgs=$(getopt -n "${0##*/}" -o "$(mangen -so "$_options")" --long "$(mangen -lo "$_options")" -- "$@")
+	[[ "$?" != "0" ]] && exit 1
 	eval set -- "$parsedArgs"
 
 	while true; do
 		case $1 in
-		-h | --help) printUsage; exit 1 ;;
+		-h | --help)             printUsage; exit 1 ;;
 		-v | --verbose)          ((verbosity++))                 ;;
 		-k | --kill)             requestedKillProcess=true       ;;
 		-d | --diagnostic)       useDiag                         ;;
@@ -157,38 +170,8 @@ function setupLaunchParameters() {
 	[[ -n "$modsArg" ]] && args+=("$modsArg")
 }
 
-##
-#	Print information on parameters used when executing the command
-function printLaunchParameters() {
-	printf "%s\n" "> LAUNCHING CLIENT"
-	if [[ $verbosity -ge 3 ]]; then
-		printf "\t%s\n" "- DIR: $dir"
-		printf "\t%s\n" "- EXE: $exe"
-	fi
-	if [[ $verbosity -ge 2 ]]; then
-		printf "\t%s\n" "- ARGUMENTS:"
-		for arg in "${args[@]}"; do
-			printf "\t\t%s\n" "$arg"
-		done
-	fi
-	if [[ ${#mods[*]} -gt 0 ]]; then
-		printf "\t%s\n" "- MODS:"
-		for mod in "${mods[@]}"; do
-			printf "\t\t%s\n" "$(printf "%s" "$mod" | sed 's/;/\n\t\t/g')"
-		done
-	fi
-}
-
-##
-#	Setup directory and executables based on the flag given
-function setupExecutables() {
-	[[ $useExperimental == true ]] && dir=$clientDirExp
-	[[ $useDiag == true ]] && exe=$clientExeDiag
-}
-
-#############################################
-# MAIN
-setupLaunchParameters "$@"
+###############################################################################
+parseArgs "$@"
 setupExecutables
 [[ $requestedKillProcess == true ]] && killAllProcesses
 [[ $verbosity -ge 1 ]] && printLaunchParameters

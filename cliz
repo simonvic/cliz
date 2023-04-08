@@ -8,7 +8,6 @@ serverMission=$(queryCfg '/config/server/defaults/mission/text()')
 serverConfig=$(queryCfg '/config/server/defaults/config/text()')
 serverProfileFolder=$(queryCfg '/config/server/defaults/profile/text()')
 privateKey=$(queryCfg '/config/private-key/text()')
-workshopDir=$(queryCfg '/config/workshop/dir/text()')
 
 verbosity=0
 verbosityArgs=()
@@ -25,12 +24,13 @@ modsToLaunchServerSideResolved=()  # array of paths
 ##
 # @param mod id
 function addModToBuild() {
-	local mod=$(queryCfg "//*[@id='$1']")
-	local modType=$(queryCfg "name(/*)" "$mod")
+	local mod modType deps
+	mod=$(queryCfg "//*[@id='$1']")
+	modType=$(queryCfg "name(/*)" "$mod")
 	case "$modType" in
 		workshop) : ;;
 		group)
-			local deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
+			deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
 			if [[ -n "$deps" ]]; then
 				while read -r dep; do
 					addModToBuild "$dep"
@@ -44,13 +44,14 @@ function addModToBuild() {
 ##
 # @param mod id
 function addModToLaunch() {
-	local mod=$(queryCfg "//*[@id='$1']")
-	local modType=$(queryCfg "name(/*)" "$mod")
+	local mod modType deps
+	mod=$(queryCfg "//*[@id='$1']")
+	modType=$(queryCfg "name(/*)" "$mod")
 	case "$modType" in
 		group) : ;;
 		workshop | mod) modsToLaunch+=("$1") ;;
 	esac
-	local deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
+	deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
 	if [[ -n "$deps" ]]; then
 		while read -r dep; do
 			addModToLaunch "$dep"
@@ -61,13 +62,14 @@ function addModToLaunch() {
 ##
 # @param mod id
 function addModToLaunchServerSide() {
-	local mod=$(queryCfg "//*[@id='$1']")
-	local modType=$(queryCfg "name(/*)" "$mod")
+	local mod modType deps
+	mod=$(queryCfg "//*[@id='$1']")
+	modType=$(queryCfg "name(/*)" "$mod")
 	case "$modType" in
 		group) : ;;
 		workshop | mod) modsToLaunchServerSide+=("$1") ;;
 	esac
-	local deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
+	deps=$(queryCfgAttr "//deps/dep/@ref" "$mod")
 	if [[ -n "$deps" ]]; then
 		while read -r dep; do
 			addModToLaunchServerSide "$dep"
@@ -85,6 +87,7 @@ function getFormattedModsArgs() {
 	printf "%s" "$modsArg"
 }
 
+##
 # @return formatted mod arg (i.e. --server-mods=A;B;C;D)
 function getFormattedServerModsArgs() {
 	local modsArg=""
@@ -94,132 +97,10 @@ function getFormattedServerModsArgs() {
 	printf "%s" "$modsArg"
 }
 
-##
-# Launch the server
-function launchServer() {
-	DayZServerLauncher \
-		"${verbosityArgs[@]}" \
-		--do-logs \
-		--admin-log \
-		--net-log \
-		--freeze-check \
-		"${args[@]}" \
-		"${serverArgs[@]}" \
-		"$(getFormattedModsArgs)" \
-		"$(getFormattedServerModsArgs)" \
-		${serverMission:+--mission "$serverMission"} \
-		${serverConfig:+--config "$serverConfig"} \
-		${serverProfileFolder:+--profile-folder "$serverProfileFolder"}
-
-		if [[ ! "$serverMission" =~ "dayzOffline.chernarusplus" ]]; then
-			printf "%s\n" "Using custom mission. Remember to edit your server config ( $serverConfig )!"
-		fi
-}
-
-##
-# Launch the client
-function launchClient() {
-	DayZClientLauncher \
-		"${verbosityArgs[@]}" \
-		--do-logs \
-		--script-debug \
-		--no-pause \
-		"${args[@]}" \
-		"${clientArgs[@]}" \
-		"$(getFormattedModsArgs)" \
-		${serverAddress:+--server-address "$serverAddress"} \
-		${profileName:+--name "$profileName"}
-}
-
-##
-# Build specified mods
-function buildMods() {
-	for source in "${!modsToBuildResolved[@]}"; do
-		DayZAddonBuilder \
-			--verbose \
-			"${verbosityArgs[@]}" \
-			--binarize-all-textures \
-			--extended-logs \
-			--clear-temp \
-			--source "$source" \
-			--destination "${modsToBuildResolved[$source]}" \
-			--prefix "${source/P:\\/}" \
-			--project-path "$source" \
-			${privateKey:+--sign-with-copy "$privateKey"} \
-			--include "P:\ADDON_BUILDER_DATA\toInclude.txt" \
-			--temp-folder "%TEMP%\dayzaddonbuilder"
-	done
-}
-
-OPTIONS=(
-	"h,help                       --Print this page and exit"
-	"v,verbose                    --Be verbose. Can be repeated for more verbosity"
-	"s,launch-server              --Launch the server"
-	"c,launch-client              --Launch the client"
-	"k,kill                       --Kill all game instances"
-	"b,build:mod                  --Specify mod to build. Can be repeated to build multiple mods"
-	"l,launch-mod:mod             --Specify mod to be loaded when launching game client/server"
-	"L,launch-mod-server:mod      --Specify mod to be loaded server side when launching game server"
-	"B,build-and-launch:mod       --Specify mod to build and to be loaded when launching game client/server"
-	"d,diagnostic                 --Use diagnostic executable"
-	"f,file-patching              --Enable file patching. Diagnostic exe will be used."
-	"e,experimental               --Use experimental version of the game client/server"
-	"script-define:define         --Pass a script define. Can be repeated for more"
-	"ignore-new-errors            --New errors are treated as warnings."
-)
-_OPTIONS=$(declare -p OPTIONS)
-
-function printUsage() {
-	mangen \
-		--name "${0##*/}" \
-		--options "$_OPTIONS" \
-		--command-width 35 \
-		--description-width 100 \
-		--new-line-indent 4
-}
-
-function parseArgs() {
-	local parsedArgs=$(getopt -n "${0##*/}" -o "$(mangen -so "$_OPTIONS")" --long "$(mangen -lo "$_OPTIONS")" -- "$@")
-	if [ "$?" != "0" ]; then
-		printUsage
-		exit 1
-	fi
-
-	eval set -- "$parsedArgs"
-
-	while true; do
-		case $1 in
-			-h | --help) printUsage; exit 1 ;;
-			-v | --verbose) ((verbosity++)); verbosityArgs+=("--verbose") ;;
-			-s | --launch-server) willLaunchServer=true ;;
-			-c | --launch-client) willLaunchClient=true ;;
-			-k | --kill-game) willKillGame=true ;;
-			-b | --build) addModToBuild "$2"; shift ;;
-			-l | --launch-mod) addModToLaunch "$2"; shift ;;
-			-L | --launch-mod-server) addModToLaunchServerSide "$2"; shift ;;
-			-B | --build-and-launch) addModToBuild "$2"; addModToLaunch "$2"; shift ;;
-			-f | --file-patching) args+=("--file-patching") ;;
-			-d | --diagnostic) args+=("--diagnostic") ;;
-			-e | --experimental) args+=("--experimental") ;;
-			--ignore-new-errors) args+=("--ignore-new-errors") ;;
-			--script-define) args+=("--script-define=$2"); shift ;;
-			--)
-				shift
-				break
-				;;
-			*)
-				echo "Invalid option: $1"
-				exit 1
-				;;
-			esac
-		shift #go to next arg
-	done
-
-}
-
 function debugConfigMod() {
-	local mod=$(queryCfg "//*[@id='$1']")
-	local deps=$(queryCfgAttr "//*[@id='$1']/deps/dep/@ref")
+	local mod deps
+	mod=$(queryCfg "//*[@id='$1']")
+	deps=$(queryCfgAttr "//*[@id='$1']/deps/dep/@ref")
 	local depsDepth=${2:-0}
 	for i in $(seq "$depsDepth"); do
 		printf "\t"
@@ -293,21 +174,12 @@ function debugResolvedMods() {
 	fi
 }
 
-
-function resolveModDir() {
-	local mod=$(queryCfg "//*[@id='$id']")
-	case "$(queryCfg "name(/*)" "$mod")" in
-		mod) queryCfgAttr "string(//@dir)" "$mod" ;;
-		workshop) queryCfgAttr "concat('$workshopDir\\', string(//@dir))" "$mod" ;;
-		*) : ;;
-	esac
-}
-
+##
+# Resolve IDs of mods to build and launch
 function resolveMods() {
 	for id in "${modsToBuild[@]}"; do
-		local mod=$(queryCfg "//*[@id='$id']")
-		local src
-		local dst
+		local mod src dst
+		mod=$(resolveMod "$id")
 		case "$(queryCfg "name(/*)" "$mod")" in
 			mod)
 				src=$(queryCfgAttr "string(//@source)" "$mod")
@@ -340,11 +212,133 @@ function resolveMods() {
 ##
 # Kill all clients and servers (diag included)
 function killAllProcesses() {
+	printf "%s\n" "> KILLING PROCESSES"
 	killClient "$verbosity"
 	killClientDiag "$verbosity"
 	killServer "$verbosity"
 	killServerDiag "$verbosity"
 }
+
+##
+# Launch the server
+function launchServer() {
+	DayZServerLauncher \
+		"${verbosityArgs[@]}" \
+		--do-logs \
+		--admin-log \
+		--net-log \
+		--freeze-check \
+		"${args[@]}" \
+		"${serverArgs[@]}" \
+		"$(getFormattedModsArgs)" \
+		"$(getFormattedServerModsArgs)" \
+		${serverMission:+--mission "$serverMission"} \
+		${serverConfig:+--config "$serverConfig"} \
+		${serverProfileFolder:+--profile-folder "$serverProfileFolder"}
+
+		if [[ ! "$serverMission" =~ "dayzOffline.chernarusplus" ]]; then
+			printf "%s\n" "Using custom mission. Remember to edit your server config ( $serverConfig )!"
+		fi
+}
+
+##
+# Launch the client
+function launchClient() {
+	DayZClientLauncher \
+		"${verbosityArgs[@]}" \
+		--do-logs \
+		--script-debug \
+		--no-pause \
+		"${args[@]}" \
+		"${clientArgs[@]}" \
+		"$(getFormattedModsArgs)" \
+		${serverAddress:+--server-address "$serverAddress"} \
+		${profileName:+--name "$profileName"}
+}
+
+##
+# Build specified mods
+function buildMods() {
+	for source in "${!modsToBuildResolved[@]}"; do
+		DayZAddonBuilder \
+			--verbose \
+			"${verbosityArgs[@]}" \
+			--binarize-all-textures \
+			--extended-logs \
+			--clear-temp \
+			--source "$source" \
+			--destination "${modsToBuildResolved[$source]}" \
+			--prefix "${source/P:\\/}" \
+			--project-path "$source" \
+			${privateKey:+--sign-with-copy "$privateKey"} \
+			--include "P:\ADDON_BUILDER_DATA\toInclude.txt" \
+			--temp-folder "%TEMP%\dayzaddonbuilder"
+	done
+}
+
+options=(
+	"h,help                       --Print this page and exit"
+	"v,verbose                    --Be verbose. Can be repeated for more verbosity"
+	"s,launch-server              --Launch the server"
+	"c,launch-client              --Launch the client"
+	"k,kill                       --Kill all game instances"
+	"b,build:mod                  --Specify mod to build. Can be repeated to build multiple mods"
+	"l,launch-mod:mod             --Specify mod to be loaded when launching game client/server"
+	"L,launch-mod-server:mod      --Specify mod to be loaded server side when launching game server"
+	"B,build-and-launch:mod       --Specify mod to build and to be loaded when launching game client/server"
+	"d,diagnostic                 --Use diagnostic executable"
+	"f,file-patching              --Enable file patching. Diagnostic exe will be used."
+	"e,experimental               --Use experimental version of the game client/server"
+	"script-define:define         --Pass a script define. Can be repeated for more"
+	"ignore-new-errors            --New errors are treated as warnings."
+)
+_options=$(declare -p options)
+
+function printUsage() {
+	mangen \
+		--name "${0##*/}" \
+		--options "$_options" \
+		--command-width 35 \
+		--description-width 80 \
+		--new-line-indent 4
+}
+
+function parseArgs() {
+	local parsedArgs
+	parsedArgs=$(getopt -n "${0##*/}" -o "$(mangen -so "$_options")" --long "$(mangen -lo "$_options")" -- "$@")
+	[[ "$?" != "0" ]] && exit 1
+	eval set -- "$parsedArgs"
+
+	while true; do
+		case $1 in
+			-h | --help)              printUsage; exit 1 ;;
+			-v | --verbose)           ((verbosity++)); verbosityArgs+=("--verbose") ;;
+			-s | --launch-server)     willLaunchServer=true ;;
+			-c | --launch-client)     willLaunchClient=true ;;
+			-k | --kill-game)         willKillGame=true ;;
+			-b | --build)             addModToBuild "$2"; shift ;;
+			-l | --launch-mod)        addModToLaunch "$2"; shift ;;
+			-L | --launch-mod-server) addModToLaunchServerSide "$2"; shift ;;
+			-B | --build-and-launch)  addModToBuild "$2"; addModToLaunch "$2"; shift ;;
+			-f | --file-patching)     args+=("--file-patching") ;;
+			-d | --diagnostic)        args+=("--diagnostic") ;;
+			-e | --experimental)      args+=("--experimental") ;;
+			--ignore-new-errors)      args+=("--ignore-new-errors") ;;
+			--script-define)          args+=("--script-define=$2"); shift ;;
+			--)
+				shift
+				break
+				;;
+			*)
+				echo "Invalid option: $1"
+				exit 1
+				;;
+			esac
+		shift #go to next arg
+	done
+
+}
+
 
 ##############################################################
 ## MAIN

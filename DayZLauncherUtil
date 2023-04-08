@@ -15,6 +15,26 @@ function queryCfgAttr() {
 }
 
 ##
+# @param mod id
+# @return mod xml node
+function resolveMod() {
+	queryCfg "//*[@id='$1']"
+}
+
+##
+# @param mod id
+# @return mod directory
+function resolveModDir() {
+	local mod
+	mod=$(resolveMod "$1")
+	case "$(queryCfg "name(/*)" "$mod")" in
+		mod) queryCfgAttr "string(//@dir)" "$mod" ;;
+		workshop) queryCfgAttr "concat('$workshopDir\\', string(//@dir))" "$mod" ;;
+		*) : ;;
+	esac
+}
+
+##
 # Windows, make directory
 # @param directory
 function wMkdir(){
@@ -40,8 +60,9 @@ function wTaskKill() {
 # @param process name query
 # @param verbosity default: 0
 function killProcess() {
-	local pid=$(wFindPid "$1")
-	local verbosity=${2:-0}
+	local pid verbosity
+	pid=$(wFindPid "$1")
+	verbosity=${2:-0}
 	if [[ -n "$pid" ]]; then
 		[[ $verbosity -ge 2 ]] && printf "\t%s\n" "> Killing $1 $pid ..."
 		wTaskKill "$pid"
@@ -108,3 +129,4 @@ clientExeDiag=$(queryCfg "/config/client/exe-diag/text()")
 serverDir=$(queryCfg "/config/server/dir/text()")
 serverDirExp=$(queryCfg "/config/server/dir-exp/text()")
 serverExe=$(queryCfg "/config/server/exe/text()")
+workshopDir=$(queryCfg '/config/workshop/dir/text()')

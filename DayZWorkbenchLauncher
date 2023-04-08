@@ -3,80 +3,68 @@
 source DayZLauncherUtil
 
 workbenchExe=$(queryCfg "/config/tools/workbench/text()")
-mods=""
+mods=()
 
 verbosity=0
 
-function printUsage() {
-	printf "
-- Usage
-	DayZWorkbenchLauncher [-hv] [-m modsList] [-X exeFile]
-	
-- Options
-	-h, --help                     Show this help.
-	-v, --verbose                  Be verbose. Can be repeated for more verbosity
-	-m, --mods <mods>              Loads the specified sub-folders for different mods.
-	                                Separated by semi-colons. Absolute path and 
-	                                multiple stacked folders are possible.
-
-	-X, --exe <exe path>           Selects what executable file to be used
-	    --script-define <define>   Specify to load a script preprocessor define.
-	                                Can be repeated to define more.
-"
+##
+# @return formatted mod arg (i.e. --mods=A;B;C;D)
+function getFormattedModsArgs() {
+	local modsArg=""
+	for mod in "${mods[@]}"; do
+		[[ -z "$modsArg" ]] && modsArg="-mod=$mod" || modsArg="$modsArg;$mod"
+	done
+	printf "%s" "$modsArg"
 }
 
-function setupLaunchParameters() {
-	local shortOpt="hvm:X:"
-	local longOpt="help,verbose,mods:,exe:,script-define:"
+options=(
+	"h,help                --Print this page and exit"
+	"v,verbose             --Be verbose. Can be repeated for more verbosity"
+	"m,mods:mods           --Loads the specified sub-folders for different mods.
+	                           Separated by semi-colons.
+	                           Absolute path and multiple stacked folders are possible. "
+	"X,exe:exe-path        --Select what executable file to use"
+	"script-define:define  --Specify to load a script preprocessor define.
+	                           Can be repeated to define more"
+)
+_options=$(declare -p options)
 
-	local parsedArgs=$(getopt -n DayZWorkbenchLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
-	if [ "$?" != "0" ]; then
-		printUsage
-		exit 1
-	fi
+function printUsage() {
+	mangen \
+		--name "${0##*/}" \
+		--options "$_options" \
+		--command-width 35 \
+		--description-width 80 \
+		--new-line-indent 4
+}
 
+function parseArgs() {
+	local parsedArgs
+	parsedArgs=$(getopt -n "${0##*/}" -o "$(mangen -so "$_options")" --long "$(mangen -lo "$_options")" -- "$@")
+	[[ "$?" != "0" ]] && exit 1
 	eval set -- "$parsedArgs"
 
 	while true; do
 		case $1 in
-		-h | --help) printUsage; exit 1 ;;
-		-v | --verbose) ((verbosity + 1)) ;;
-		-m | --mods) addMod "$2"; shift ;;
-		-X | --exe) setWorkbenchExe "$2"; shift ;;
-		--)
-			shift
-			break
-			;;
-		*)
-			echo "Invalid option: $1"
-			printUsage
-			exit 1
-			;;
-		esac
+			-h | --help) printUsage; exit 1 ;;
+			-v | --verbose) ((verbosity++)) ;;
+			-m | --mods) mods+=("$2"); shift ;;
+			-X | --exe) workbenchExe="$2"; shift ;;
+			--)
+				shift
+				break
+				;;
+			*)
+				echo "Invalid option: $1"
+				exit 1
+				;;
+			esac
 		shift #go to next arg
 	done
-
-	[[ -n $mods ]] && argMods="-mod=$mods"
-
 }
+###############################################################################
 
-function setWorkbenchExe() {
-	if [ -n "$1" ]; then
-		workbenchExe="$1"
-	fi
-}
+parseArgs "$@"
 
-function addMod() {
-	if [ -n "$1" ]; then
-		if [ -n "$mods" ]; then
-			mods="$mods;$1"
-		else
-			mods="$1"
-		fi
-	fi
-}
-
-setupLaunchParameters "$@"
-
-[[ $verbosity -ge 2 ]] && echo "cmd.exe" "/c" "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$argMods"
-cmd.exe /c "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$argMods"
+[[ $verbosity -ge 2 ]] && echo "cmd.exe" "/c" "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$(getFormattedModsArgs)"
+cmd.exe /c "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$(getFormattedModsArgs)"

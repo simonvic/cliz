@@ -18,60 +18,6 @@ args=()
 mods=()
 serverMods=()
 
-function printUsage() {
-	printf "
-- Usage
-	DayZServerLauncher [-hvkdeflanF] [-m modsList] [-s serverMods] [-p portNumber] [-c coresNumber] [-L maxFPS] [-D directory] [-X exeFile] [-C configFile] [-M mission] [-P profileFolder] [-B BEpath]
-	
-- Options
-	-h, --help                        Show this help.
-	-v, --verbose                     Be verbose. Can be repeated for more verbosity
-	-k, --kill                        Kill active processes before starting a new one
-	-e, --experimental                Use experimental executable.
-	-d, --diagnostic                  Use diagnostic executable.
-	-f, --file-patching               Ensures that only PBOs are loaded 
-	                                   and NO unpacked data.
-
-	-l, --do-logs                     Enables all log messages in the server RPT file.
-	-a, --admin-log                   Enables the admin log.
-	-n, --net-log                     Enables the network traffic logging.
-	-F, --freeze-check                Stops the server when frozen for more than 
-	                                   5 min and create a dump file.
-	
-	-m, --mods <mods>                 Loads the specified sub-folders for different mods.
-	                                   Separated by semi-colons. Absolute path and 
-	                                   multiple stacked folders are possible.
-
-	-s, --server-mods <mods>          Loads the specified sub-folders for different
-	                                   server-side (not broadcasted to clients) mods.
-	                                   Separated by semi-colons. Absolute path and 
-	                                   multiple stacked folders are possible.
-
-	-p, --port <port>                 Port to have dedicated server listen on.
-	-c, --cpu-count <cores number>    Sets the number of logical CPU cores to use for
-	                                  parallel tasks processing. It should be less or
-	                                   equal than the numbers of available cores.
-
-	-L, --limit-fps <max fps>         Limits server FPS to specified value (current 
-	                                   max is 200) to lower CPU usage of low population servers.
-
-	-D, --dir <exe directory>         Selects where the executables are found
-	-X, --exe <exe file>              Selects what executable file to be used
-	-C, --config <config>             Selects the Server Config File.
-	-M, --mission <mission>           Selects what mission to use.
-	-P, --profile-folder <profile>    Path to the folder containing server profile. By default, 
-	                                   server logs are written to server profile folder. 
-	                                   Logs/dumps/etc will be created there, along with 
-	                                   BattlEye/BEC/Rcon related files. Windows Environment 
-	                                   variables are supported. E.g. &ampuserprofile&amp
-
-	-B, --battleye-path <path>        Sets a custom path to the Battleye files
-	    --script-define <define>      Specify to load a script preprocessor define.
-	                                   Can be repeated to define more.
-	    --ignore-new-errors           Newly added game / script errors are treated as warning.
-
-"
-}
 
 ##
 #	Kill all Dayz related processes (exe and diagnostic exe)
@@ -99,74 +45,6 @@ function useDiag() {
 function useFilePatching() {
 	useDiag
 	args+=("-filePatching")
-}
-
-function setupLaunchParameters() {
-	local shortOpt="hvkdeflanFm:s:p:c:L:D:X:C:M:P:B:"
-	local longOpt="help,verbose,kill,diagnostic,experimental,file-patching,do-logs,admin-log,net-log,freeze-check,mods:,server-mods:,port:,cpu-count:,limit-fps:,dir:,exe:,config:,mission:,profile-folder:,battleye-path:,script-define:,ignore-new-errors"
-
-	local parsedArgs=$(getopt -n DayZServerLauncher -o ${shortOpt} --long ${longOpt} -- "$@")
-	if [ "$?" != "0" ]; then
-		printUsage
-		exit 1
-	fi
-
-	eval set -- "$parsedArgs"
-
-	while true; do
-		case $1 in
-		-h | --help)
-			printUsage
-			exit 1
-			;;
-		-v | --verbose)        ((verbosity++))                 ;;
-		-k | --kill)           requestedKillProcess=true       ;;
-		-d | --diagnostic)     useDiag                         ;;
-		-e | --experimental)   useExperimental                 ;;
-		-f | --file-patching)  useFilePatching                 ;;
-		-l | --do-logs)        args+=("-doLogs")               ;;
-		-a | --admin-log)      args+=("-adminLog")             ;;
-		-n | --net-log)        args+=("-netLog")               ;;
-		-F | --freeze-check)   args+=("-freezeCheck")          ;;
-		-m | --mods)           mods+=("$2")            ; shift ;;
-		-s | --server-mods)    serverMods+=("$2")      ; shift ;;
-		-p | --port)           args+=("-port=$2")      ; shift ;;
-		-c | --cpu-count)      args+=("-cpuCount=$2")  ; shift ;;
-		-L | --limit-fps)      args+=("-limitFPS=$2")  ; shift ;;
-		-D | --dir)            dir="$2"                ; shift ;;
-		-X | --exe)            exe="$2"                ; shift ;;
-		-C | --config)         args+=("-config=$2")    ; shift ;;
-		-M | --mission)        args+=("-mission=$2")   ; shift ;;
-		-P | --profile-folder) args+=("-profiles=$2")  ; shift ;;
-		-B | --battleye-path)  args+=("-BEpath=$2")    ; shift ;;
-		--script-define)       args+=("-scrDef=$2")    ; shift ;;
-		--ignore-new-errors)   args+=("-newErrorsAreWarnings=1");;
-
-		--)
-			shift
-			break
-			;;
-		*)
-			echo "Invalid option: $1"
-			printUsage
-			exit 1
-			;;
-		esac
-		shift #go to next arg
-	done
-
-	local modsArg=""
-	for mod in "${mods[@]}"; do
-		[[ -z "$modsArg" ]] && modsArg="-mod=$mod" || modsArg="$modsArg;$mod"
-	done
-	[[ -n "$modsArg" ]] && args+=("$modsArg")
-
-	local serverModsArg=""
-	for mod in "${serverMods[@]}"; do
-		[[ -z "$serverModsArg" ]] && serverModsArg="-serverMod=$mod" || serverModsArg="$serverModsArg;$mod"
-	done
-	[[ -n "$serverModsArg" ]] && args+=("$serverModsArg")
-
 }
 
 ##
@@ -220,9 +98,99 @@ function setupExecutables() {
 		fi
 	fi
 }
-#############################################
-# MAIN
-setupLaunchParameters "$@"
+
+options=(
+	"h,help                        --Print this page and exit"
+	"v,verbose                     --Be verbose. Can be repeated for more verbosity"
+	"k,kill                        --Kill active processes before starting a new one"
+	"e,experimental                --Use experimental executable."
+	"d,diagnostic                  --Use diagnostic executable."
+	"f,file-patching               --Ensures that only PBOs are loaded and NO unpacked data."
+	"l,do-logs                     --Enables all log messages in the server RPT file."
+	"a,admin-log                   --Enables the admin log."
+	"n,net-log                     --Enables the network traffic logging."
+	"F,freeze-check                --Stops the server when frozen for more than 5 min and create a dump file."
+	"m,mods:mods                   --Loads the specified sub-folders for different mods.
+	                                   Separated by semi-colons.
+	                                   Absolute path and multiple stacked folders are possible."
+	"s,server-mods:mods            --Loads the specified sub-folders for different server-side (not broadcasted to clients) mods.
+	                                   Separated by semi-colons.
+	                                   Absolute path and multiple stacked folders are possible."
+	"p,port:port                   --Port to have dedicated server listen on."
+	"c,cpu-count:cores-number      --Sets the number of logical CPU cores to use for parallel tasks processing.
+	                                   It should be less or equal than the numbers of available cores."
+	"L,limit-fps:max-fps           --Limits server FPS to specified value (current max is 200) to lower CPU usage of low population servers."
+	"D,dir:exe-directory           --Selects where the executables are found"
+	"X,exe:exe-file                --Selects what executable file to be used"
+	"C,config:config               --Selects the Server Config File."
+	"M,mission:mission             --Selects what mission to use."
+	"P,profile-folder:profile      --Path to the folder containing server profile.
+	                                   By default, server logs are written to server profile folder. 
+	                                   Logs/dumps/etc will be created there, along with BattlEye/BEC/Rcon related files.
+	                                   Windows Environment variables are supported. E.g. &ampuserprofile&amp"
+	"B,battleye-path:path         --Sets a custom path to the Battleye files"
+	"script-define:define         --Specify to load a script preprocessor define.
+	                                   Can be repeated to define more."
+	"ignore-new-errors            --Newly added game / script errors are treated as warning."
+)
+_options=$(declare -p options)
+
+function printUsage() {
+	mangen \
+		--name "${0##*/}" \
+		--options "$_options" \
+		--command-width 35 \
+		--description-width 80 \
+		--new-line-indent 4
+}
+
+function parseArgs() {
+	local parsedArgs
+	parsedArgs=$(getopt -n "${0##*/}" -o "$(mangen -so "$_options")" --long "$(mangen -lo "$_options")" -- "$@")
+	[[ "$?" != "0" ]] && exit 1
+	eval set -- "$parsedArgs"
+
+	while true; do
+		case $1 in
+			-h | --help)           printUsage; exit 1 ;;
+			-v | --verbose)        ((verbosity++))                   ;;
+			-k | --kill)           requestedKillProcess=true         ;;
+			-d | --diagnostic)     useDiag                           ;;
+			-e | --experimental)   useExperimental                   ;;
+			-f | --file-patching)  useFilePatching                   ;;
+			-l | --do-logs)        args+=("-doLogs")                 ;;
+			-a | --admin-log)      args+=("-adminLog")               ;;
+			-n | --net-log)        args+=("-netLog")                 ;;
+			-F | --freeze-check)   args+=("-freezeCheck")            ;;
+			-m | --mods)           mods+=("$2")              ; shift ;;
+			-s | --server-mods)    serverMods+=("$2")        ; shift ;;
+			-p | --port)           args+=("-port=$2")        ; shift ;;
+			-c | --cpu-count)      args+=("-cpuCount=$2")    ; shift ;;
+			-L | --limit-fps)      args+=("-limitFPS=$2")    ; shift ;;
+			-D | --dir)            dir="$2"                  ; shift ;;
+			-X | --exe)            exe="$2"                  ; shift ;;
+			-C | --config)         args+=("-config=$2")      ; shift ;;
+			-M | --mission)        args+=("-mission=$2")     ; shift ;;
+			-P | --profile-folder) args+=("-profiles=$2")    ; shift ;;
+			-B | --battleye-path)  args+=("-BEpath=$2")      ; shift ;;
+			--script-define)       args+=("-scrDef=$2")      ; shift ;;
+			--ignore-new-errors)   args+=("-newErrorsAreWarnings=1") ;;
+
+			--)
+				shift
+				break
+				;;
+			*)
+				echo "Invalid option: $1"
+				exit 1
+				;;
+			esac
+		shift #go to next arg
+	done
+}
+
+###############################################################################
+parseArgs "$@"
 setupExecutables
 [[ $requestedKillProcess == true ]] && killAllProcesses
 [[ $verbosity -ge 1 ]] && printLaunchParameters
