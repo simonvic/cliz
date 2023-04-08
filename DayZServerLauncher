@@ -2,12 +2,6 @@
 
 source DayZLauncherUtil
 
-serverDir=$(queryCfg "/config/server/dir/text()")
-serverDirExp=$(queryCfg "/config/server/dir-exp/text()")
-serverExe=$(queryCfg "/config/server/exe/text()")
-clientDir=$(queryCfg "/config/client/dir/text()")
-clientDirExp=$(queryCfg "/config/client/dir-exp/text()")
-clientExeDiag=$(queryCfg "/config/client/exe-diag/text()")
 dir=$serverDir
 exe=$serverExe
 
@@ -80,23 +74,11 @@ function printUsage() {
 }
 
 ##
-# @param process name query
-function killProcess() {
-	local pid=$(wFindPid "$1")
-	if [[ -n "$pid" ]]; then
-		[[ $verbosity -ge 1 ]] && printf "\t%s\n" "> Killing $1 $pid ..."
-		wTaskKill "$pid"
-	else
-		[[ $verbosity -ge 1 ]] && printf "\t%s\n" "> Process not found: $1"
-	fi
-}
-
-##
 #	Kill all Dayz related processes (exe and diagnostic exe)
 function killAllProcesses() {
 	printf "%s\n" "> KILLING PROCESSES"
-	killProcess "commandline LIKE '$serverExe%'"
-	killProcess "commandline LIKE '$clientExeDiag%-server%'"
+	killServer "$verbosity"
+	killServerDiag "$verbosity"
 }
 
 ##

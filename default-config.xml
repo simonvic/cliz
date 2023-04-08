@@ -31,6 +31,7 @@
 	<!-- DayZ Tools -->
 	<tools>
 		<addonbuilder>C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\AddonBuilder\AddonBuilder.exe</addonbuilder>
+		<workbench>C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\Workbench\workbenchApp.exe</workbench>
 	</tools>
 
 	<!-- Path to your private key -->

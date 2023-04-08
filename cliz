@@ -10,6 +10,7 @@ serverProfileFolder=$(queryCfg '/config/server/defaults/profile/text()')
 privateKey=$(queryCfg '/config/private-key/text()')
 workshopDir=$(queryCfg '/config/workshop/dir/text()')
 
+verbosity=0
 verbosityArgs=()
 modsToBuild=()              # array of mods id to build
 modsToLaunch=()             # array of mods id to launch
@@ -135,6 +136,7 @@ function launchClient() {
 function buildMods() {
 	for source in "${!modsToBuildResolved[@]}"; do
 		DayZAddonBuilder \
+			--verbose \
 			"${verbosityArgs[@]}" \
 			--binarize-all-textures \
 			--extended-logs \
@@ -188,10 +190,10 @@ function parseArgs() {
 	while true; do
 		case $1 in
 			-h | --help) printUsage; exit 1 ;;
-			-v | --verbose) verbosityArgs+=("--verbose") ;;
+			-v | --verbose) ((verbosity++)); verbosityArgs+=("--verbose") ;;
 			-s | --launch-server) willLaunchServer=true ;;
 			-c | --launch-client) willLaunchClient=true ;;
-			-k | --kill-game) args+=("--kill") ;;
+			-k | --kill-game) willKillGame=true ;;
 			-b | --build) addModToBuild "$2"; shift ;;
 			-l | --launch-mod) addModToLaunch "$2"; shift ;;
 			-L | --launch-mod-server) addModToLaunchServerSide "$2"; shift ;;
@@ -335,12 +337,22 @@ function resolveMods() {
 	fi
 }
 
+##
+# Kill all clients and servers (diag included)
+function killAllProcesses() {
+	killClient "$verbosity"
+	killClientDiag "$verbosity"
+	killServer "$verbosity"
+	killServerDiag "$verbosity"
+}
+
 ##############################################################
 ## MAIN
 parseArgs "$@"
 resolveMods
 # debugArgs
 # debugResolvedMods
+[[ "$willKillGame" == true ]] && killAllProcesses
 [[ ${#modsToBuildResolved[@]} -gt 0 ]] && buildMods
 [[ "$willLaunchServer" == true ]] && launchServer
 [[ "$willLaunchClient" == true ]] && launchClient

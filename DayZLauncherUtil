@@ -1,8 +1,5 @@
 #!/bin/bash
 
-clizCfgPath=${XDG_CONFIG_HOME:-$HOME/.config}/cliz/config.xml
-clizCfg=""
-
 ##
 # @param xpath
 # @param xml data default: cliz cfg
@@ -39,26 +36,75 @@ function wTaskKill() {
 	taskkill.exe /F /PID "$1" /T
 }
 
-
 ##
-# 
-function readCfg() {
-	if [[ ! -e "$clizCfgPath"  ]]; then
-		printf "%s\n" "Can't load config file: $clizCfgPath"
-		exit 1
-	fi
-	clizCfg=$(xmllint "$clizCfgPath")
-	if [[ $? -eq 1 ]]; then
-		printf "%s\n" "Invalid config!"
-		exit 1
-	fi
-	local duplicate=$(queryCfg '//@id' | sort | uniq -d)
-	if [[ -n "$duplicate" ]]; then
-		printf "%s\n" "Found duplicate ids in default-config.xml:"
-		printf "%s\n" "$duplicate" | cut -d '"' -f2
-		printf "%s\n" "Fix your config before proceeding."
-		exit 1
+# @param process name query
+# @param verbosity default: 0
+function killProcess() {
+	local pid=$(wFindPid "$1")
+	local verbosity=${2:-0}
+	if [[ -n "$pid" ]]; then
+		[[ $verbosity -ge 2 ]] && printf "\t%s\n" "> Killing $1 $pid ..."
+		wTaskKill "$pid"
+	else
+		[[ $verbosity -ge 2 ]] && printf "\t%s\n" "> Process not found: $1"
 	fi
 }
 
-readCfg
+##
+# Kill DayZ client process
+# @verbosity default: 0
+function killClient() {
+	killProcess "commandline LIKE '${clientExe:?Must provide a valid exe}%'" "$1"
+}
+
+
+##
+# Kill DayZ server process
+# @verbosity default: 0
+function killServer() {
+	killProcess "commandline LIKE '${serverExe:?Must provide a valid exe}%'" "$1"
+}
+
+##
+# Kill DayZ client diag process
+# @verbosity default: 0
+function killClientDiag() {
+	killProcess "commandline LIKE '${clientExeDiag:?Must provide a valid exe}%' AND NOT commandline LIKE '%-server%'" "$1"
+}
+
+##
+# Kill DayZ server diag process
+# @verbosity default: 0
+function killServerDiag() {
+	killProcess "commandline LIKE '${clientExeDiag:?Must provide a valid exe}%-server%'" "$1"
+}
+
+###############################################################################
+
+clizCfgPath=${XDG_CONFIG_HOME:-$HOME/.config}/cliz/config.xml
+if [[ ! -e "$clizCfgPath"  ]]; then
+	printf "%s\n" "Can't load config file: $clizCfgPath"
+	exit 1
+fi
+clizCfg=$(xmllint "$clizCfgPath")
+if [[ $? -eq 1 ]]; then
+	printf "%s\n" "Invalid config!"
+	exit 1
+fi
+duplicate=$(queryCfg '//@id' | sort | uniq -d)
+if [[ -n "$duplicate" ]]; then
+	printf "%s\n" "Found duplicate ids in default-config.xml:"
+	printf "%s\n" "$duplicate" | cut -d '"' -f2
+	printf "%s\n" "Fix your config before proceeding."
+	exit 1
+else
+	unset -v duplicate
+fi
+
+clientDir=$(queryCfg "/config/client/dir/text()")
+clientDirExp=$(queryCfg "/config/client/dir-exp/text()")
+clientExe=$(queryCfg "/config/client/exe/text()")
+clientExeDiag=$(queryCfg "/config/client/exe-diag/text()")
+serverDir=$(queryCfg "/config/server/dir/text()")
+serverDirExp=$(queryCfg "/config/server/dir-exp/text()")
+serverExe=$(queryCfg "/config/server/exe/text()")

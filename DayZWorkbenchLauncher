@@ -2,9 +2,8 @@
 
 source DayZLauncherUtil
 
-DAYZ_TOOLS="C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools"
-WORKBENCH_EXE="$DAYZ_TOOLS\Bin\Workbench\workbenchApp.exe"
-MODS=""
+workbenchExe=$(queryCfg "/config/tools/workbench/text()")
+mods=""
 
 verbosity=0
 
@@ -57,27 +56,27 @@ function setupLaunchParameters() {
 		shift #go to next arg
 	done
 
-	[[ ! -z $MODS ]] && argMods="-mod=$MODS"
+	[[ -n $mods ]] && argMods="-mod=$mods"
 
 }
 
 function setWorkbenchExe() {
-	if [ ! -z "$1" ]; then
-		WORKBENCH_EXE="$1"
+	if [ -n "$1" ]; then
+		workbenchExe="$1"
 	fi
 }
 
 function addMod() {
-	if [ ! -z "$1" ]; then
-		if [ ! -z "$MODS" ]; then
-			MODS="$MODS;$1"
+	if [ -n "$1" ]; then
+		if [ -n "$mods" ]; then
+			mods="$mods;$1"
 		else
-			MODS="$1"
+			mods="$1"
 		fi
 	fi
 }
 
 setupLaunchParameters "$@"
 
-[[ $verbosity -ge 2 ]] && echo "cmd.exe" "/c" "START" "/D" "${WORKBENCH_EXE%\\*}" ".\\${WORKBENCH_EXE##*\\}" "$argMods"
-cmd.exe /c "START" "/D" "${WORKBENCH_EXE%\\*}" ".\\${WORKBENCH_EXE##*\\}" "$argMods"
+[[ $verbosity -ge 2 ]] && echo "cmd.exe" "/c" "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$argMods"
+cmd.exe /c "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$argMods"
