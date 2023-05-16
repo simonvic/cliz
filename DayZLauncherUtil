@@ -3,6 +3,7 @@
 ##
 # @param xpath
 # @param xml data default: cliz cfg
+# @return xpath result
 function queryCfg() {
 	xmllint --xpath "$1" - <<< "${2:-$clizCfg}" 2> /dev/null
 }
@@ -10,6 +11,7 @@ function queryCfg() {
 ##
 # @param xpath
 # @param xml data default: cliz cfg
+# @return xpath result
 function queryCfgAttr() {
 	queryCfg "$1" "$2" | cut -d '=' -f 2 | tr -d '"'
 }
