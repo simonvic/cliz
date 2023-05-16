@@ -20,6 +20,7 @@ clientArgs=()
 declare -A modsToBuildResolved     # source=destination
 modsToLaunchResolved=()            # array of paths
 modsToLaunchServerSideResolved=()  # array of paths
+dryRun=false
 
 ##
 # @param mod id
@@ -261,7 +262,7 @@ function launchClient() {
 function buildMods() {
 	for source in "${!modsToBuildResolved[@]}"; do
 		DayZAddonBuilder \
-			--verbose \
+			-vvv \
 			"${verbosityArgs[@]}" \
 			--binarize-all-textures \
 			--extended-logs \
@@ -291,6 +292,7 @@ options=(
 	"e,experimental               --Use experimental version of the game client/server"
 	"script-define:define         --Pass a script define. Can be repeated for more"
 	"ignore-new-errors            --New errors are treated as warnings."
+	"dry-run                      --Simulate the command without actually doing anything"
 )
 _options=$(declare -p options)
 
@@ -325,6 +327,7 @@ function parseArgs() {
 			-e | --experimental)      args+=("--experimental") ;;
 			--ignore-new-errors)      args+=("--ignore-new-errors") ;;
 			--script-define)          args+=("--script-define=$2"); shift ;;
+			--dry-run)                dryRun=true ;;
 			--)
 				shift
 				break
@@ -346,6 +349,7 @@ parseArgs "$@"
 resolveMods
 # debugArgs
 # debugResolvedMods
+[[ "$dryRun" == true ]] && exit
 [[ "$willKillGame" == true ]] && killAllProcesses
 [[ ${#modsToBuildResolved[@]} -gt 0 ]] && buildMods
 [[ "$willLaunchServer" == true ]] && launchServer
