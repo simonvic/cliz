@@ -2,7 +2,7 @@
 
 source DayZLauncherUtil
 
-addonBuilderExe=$(xmllint "/home/simonvic/Documents/Productivity/Programming/scripts/cliz/default-config.xml" --xpath '/config/tools/addonbuilder/text()')
+addonBuilderExe=$(queryCfg '/config/tools/addonbuilder/text()')
 args=()
 srcDir=""
 destDir=""
