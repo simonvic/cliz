@@ -95,40 +95,40 @@ function copyModDescriptor() {
 }
 
 options=(
-	"h,help                    --Print this page and exit"
-	"v,verbose                 --Be verbose. Can be repeated for more verbosity"
-	"s,source:dir              --Source directory to build"
-	"d,destination:dir         --Destination directory of the built mod"
-	"o,only-pack               --Only stores the folder to a PBO. Does NOT binarize files. (Binarization is default behaviour.)"
-	"c,clear-temp              --Before binarizing, the content of subfolder for the current project is deleted."
-	"b,binarize-all-textures   --Binarize all .TGA, .PNG textures even if they are not referenced by any model or included in any textures.lst file."
-	"l,extended-logs           --Enable extended logging"
-	"t,temp-folder:dir         --Path for the directory which stores binarized files, default destination is temp in Windows
-	                                 If no value is present then the last folder is used
-	                                 If you use the same folder, the next time you binarize the same addon it will take less time."
-	"p,prefix:prefix           --Relative path to files used in addon, if not present then this value is calculated automatically."
-	"P,project-path:path       --Path to folder where project starts from, if you are packing only the path of a project.
-	                                 It is recommended to use the same as the source path or to define it accordingly to the need. 
-	                                 In case it is defined to P:, Binarize will process the entire P: drive which takes time."
-	"k,sign-with:key           --Private BI key (*.BIPRIVATEKEY) file that will be used to sign the addon.
-	                                 Addons created with a signature can be added to secure servers."
-	"K,sign-with-copy:key      --Private BI key (*.BIPRIVATEKEY) file that will be used to sign the addon.
-	                                 Addons created with a signature can be added to secure servers.
-	                                 The key will also be copied in the destination directory"
-	"i,include:files           --Directly copy matched files to PBO.
-	                                 Absolute path to file with wildcard patterns.
-	                                 Separator is ';' and ','."
-	"e,exclude:files           --Absolute or relative file path.
-	                                 Contains patterns of files which are excluded from final pbo.
-	                                 Look for 'exclude.lst' file in DayZTools install dir for an example of exclude file content."
-	"V,pbo-version:version     --PBO version for FileBank (-property version=<version>)"
-	"B,binarize-exe:exe        --Path to Binarize tool. Default Binarize tool is used if not specified."
-	"C,cfgConvert-exe:exe      --Path to cfg convert tool. Default is used if not specified."
-	"F,filebank-exe:exe        --Path to cfg filebank tool. Default is used if not specified."
-	"D,dssignfile-exe:exe      --Path to cfg DssignFile  tool. Default is used if not specified."
-	"T,dayz-tools:folder       --Specifies the path to DayZ Tools directory with other tools (Binarize, CfgConvert, Filebank, ...).
-	                                 By default is the directory retrieved from Steam client."
-	"-dry-run                  --Simulate the buildign without actually doing anything"
+	"h,help                    ?Print this page and exit"
+	"v,verbose                 ?Be verbose. Can be repeated for more verbosity"
+	"s,source:dir              ?Source directory to build"
+	"d,destination:dir         ?Destination directory of the built mod"
+	"o,only-pack               ?Only stores the folder to a PBO. Does NOT binarize files. (Binarization is default behaviour.)"
+	"c,clear-temp              ?Before binarizing, the content of subfolder for the current project is deleted."
+	"b,binarize-all-textures   ?Binarize all .TGA, .PNG textures even if they are not referenced by any model or included in any textures.lst file."
+	"l,extended-logs           ?Enable extended logging"
+	"t,temp-folder:dir         ?Path for the directory which stores binarized files, default destination is temp in Windows.
+	                               If no value is present then the last folder is used
+	                               If you use the same folder, the next time you binarize the same addon it will take less time."
+	"p,prefix:prefix           ?Relative path to files used in addon, if not present then this value is calculated automatically."
+	"P,project-path:path       ?Path to folder where project starts from, if you are packing only the path of a project.
+	                               It is recommended to use the same as the source path or to define it accordingly to the need. 
+	                               In case it is defined to P:, Binarize will process the entire P: drive which takes time."
+	"k,sign-with:key           ?Private BI key (*.BIPRIVATEKEY) file that will be used to sign the addon.
+	                               Addons created with a signature can be added to secure servers."
+	"K,sign-with-copy:key      ?Private BI key (*.BIPRIVATEKEY) file that will be used to sign the addon.
+	                               Addons created with a signature can be added to secure servers.
+	                               The key will also be copied in the destination directory"
+	"i,include:files           ?Directly copy matched files to PBO.
+	                               Absolute path to file with wildcard patterns.
+	                               Separator is ';' and ','."
+	"e,exclude:files           ?Absolute or relative file path.
+	                               Contains patterns of files which are excluded from final pbo.
+	                               Look for 'exclude.lst' file in DayZTools install dir for an example of exclude file content."
+	"V,pbo-version:version     ?PBO version for FileBank (-property version=<version>)"
+	"B,binarize-exe:exe        ?Path to Binarize tool. Default Binarize tool is used if not specified."
+	"C,cfgConvert-exe:exe      ?Path to cfg convert tool. Default is used if not specified."
+	"F,filebank-exe:exe        ?Path to cfg filebank tool. Default is used if not specified."
+	"D,dssignfile-exe:exe      ?Path to cfg DssignFile  tool. Default is used if not specified."
+	"T,dayz-tools:folder       ?Specifies the path to DayZ Tools directory with other tools (Binarize, CfgConvert, Filebank, ...).
+	                               By default is the directory retrieved from Steam client."
+	"-dry-run                  ?Simulate the buildign without actually doing anything"
 )
 _options=$(declare -p options)
 
@@ -208,8 +208,8 @@ if [ -z "$srcDir" ] && [ -z "$destDir" ] && [ "${#args[@]}" -eq 0 ]; then
 	exit 1
 fi
 
-: ${srcDir:?"A mod source directory MUST be defined!"}
-: ${destDir:?"A mod destination directory MUST be defined!"}
+: "${srcDir:?"A mod source directory MUST be defined!"}"
+: "${destDir:?"A mod destination directory MUST be defined!"}"
 
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 

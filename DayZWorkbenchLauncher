@@ -18,13 +18,13 @@ function getFormattedModsArgs() {
 }
 
 options=(
-	"h,help                --Print this page and exit"
-	"v,verbose             --Be verbose. Can be repeated for more verbosity"
-	"m,mods:mods           --Loads the specified sub-folders for different mods.
+	"h,help                ?Print this page and exit"
+	"v,verbose             ?Be verbose. Can be repeated for more verbosity"
+	"m,mods:mods           ?Loads the specified sub-folders for different mods.
 	                           Separated by semi-colons.
 	                           Absolute path and multiple stacked folders are possible. "
-	"X,exe:exe-path        --Select what executable file to use"
-	"script-define:define  --Specify to load a script preprocessor define.
+	"X,exe:exe-path        ?Select what executable file to use"
+	"script-define:define  ?Specify to load a script preprocessor define.
 	                           Can be repeated to define more"
 )
 _options=$(declare -p options)

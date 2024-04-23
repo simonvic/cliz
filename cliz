@@ -278,21 +278,21 @@ function buildMods() {
 }
 
 options=(
-	"h,help                       --Print this page and exit"
-	"v,verbose                    --Be verbose. Can be repeated for more verbosity"
-	"s,launch-server              --Launch the server"
-	"c,launch-client              --Launch the client"
-	"k,kill                       --Kill all game instances"
-	"b,build:mod                  --Specify mod to build. Can be repeated to build multiple mods"
-	"l,launch-mod:mod             --Specify mod to be loaded when launching game client/server"
-	"L,launch-mod-server:mod      --Specify mod to be loaded server side when launching game server"
-	"B,build-and-launch:mod       --Specify mod to build and to be loaded when launching game client/server"
-	"d,diagnostic                 --Use diagnostic executable"
-	"f,file-patching              --Enable file patching. Diagnostic exe will be used."
-	"e,experimental               --Use experimental version of the game client/server"
-	"script-define:define         --Pass a script define. Can be repeated for more"
-	"ignore-new-errors            --New errors are treated as warnings."
-	"dry-run                      --Simulate the command without actually doing anything"
+	"h,help                       ?Print this page and exit"
+	"v,verbose                    ?Be verbose. Can be repeated for more verbosity"
+	"s,launch-server              ?Launch the server"
+	"c,launch-client              ?Launch the client"
+	"k,kill                       ?Kill all game instances"
+	"b,build:mod                  ?Specify mod to build. Can be repeated to build multiple mods"
+	"l,launch-mod:mod             ?Specify mod to be loaded when launching game client/server"
+	"L,launch-mod-server:mod      ?Specify mod to be loaded server side when launching game server"
+	"B,build-and-launch:mod       ?Specify mod to build and to be loaded when launching game client/server"
+	"d,diagnostic                 ?Use diagnostic executable"
+	"f,file-patching              ?Enable file patching. Diagnostic exe will be used."
+	"e,experimental               ?Use experimental version of the game client/server"
+	"script-define:define         ?Pass a script define. Can be repeated for more"
+	"ignore-new-errors            ?New errors are treated as warnings."
+	"dry-run                      ?Simulate the command without actually doing anything"
 )
 _options=$(declare -p options)
 

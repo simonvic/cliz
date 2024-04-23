@@ -100,38 +100,38 @@ function setupExecutables() {
 }
 
 options=(
-	"h,help                        --Print this page and exit"
-	"v,verbose                     --Be verbose. Can be repeated for more verbosity"
-	"k,kill                        --Kill active processes before starting a new one"
-	"e,experimental                --Use experimental executable."
-	"d,diagnostic                  --Use diagnostic executable."
-	"f,file-patching               --Ensures that only PBOs are loaded and NO unpacked data."
-	"l,do-logs                     --Enables all log messages in the server RPT file."
-	"a,admin-log                   --Enables the admin log."
-	"n,net-log                     --Enables the network traffic logging."
-	"F,freeze-check                --Stops the server when frozen for more than 5 min and create a dump file."
-	"m,mods:mods                   --Loads the specified sub-folders for different mods.
+	"h,help                        ?Print this page and exit"
+	"v,verbose                     ?Be verbose. Can be repeated for more verbosity"
+	"k,kill                        ?Kill active processes before starting a new one"
+	"e,experimental                ?Use experimental executable."
+	"d,diagnostic                  ?Use diagnostic executable."
+	"f,file-patching               ?Ensures that only PBOs are loaded and NO unpacked data."
+	"l,do-logs                     ?Enables all log messages in the server RPT file."
+	"a,admin-log                   ?Enables the admin log."
+	"n,net-log                     ?Enables the network traffic logging."
+	"F,freeze-check                ?Stops the server when frozen for more than 5 min and create a dump file."
+	"m,mods:mods                   ?Loads the specified sub-folders for different mods.
 	                                   Separated by semi-colons.
 	                                   Absolute path and multiple stacked folders are possible."
-	"s,server-mods:mods            --Loads the specified sub-folders for different server-side (not broadcasted to clients) mods.
+	"s,server-mods:mods            ?Loads the specified sub-folders for different server-side (not broadcasted to clients) mods.
 	                                   Separated by semi-colons.
 	                                   Absolute path and multiple stacked folders are possible."
-	"p,port:port                   --Port to have dedicated server listen on."
-	"c,cpu-count:cores-number      --Sets the number of logical CPU cores to use for parallel tasks processing.
+	"p,port:port                   ?Port to have dedicated server listen on."
+	"c,cpu-count:cores-number      ?Sets the number of logical CPU cores to use for parallel tasks processing.
 	                                   It should be less or equal than the numbers of available cores."
-	"L,limit-fps:max-fps           --Limits server FPS to specified value (current max is 200) to lower CPU usage of low population servers."
-	"D,dir:exe-directory           --Selects where the executables are found"
-	"X,exe:exe-file                --Selects what executable file to be used"
-	"C,config:config               --Selects the Server Config File."
-	"M,mission:mission             --Selects what mission to use."
-	"P,profile-folder:profile      --Path to the folder containing server profile.
+	"L,limit-fps:max-fps           ?Limits server FPS to specified value (current max is 200) to lower CPU usage of low population servers."
+	"D,dir:exe-directory           ?Selects where the executables are found"
+	"X,exe:exe-file                ?Selects what executable file to be used"
+	"C,config:config               ?Selects the Server Config File."
+	"M,mission:mission             ?Selects what mission to use."
+	"P,profile-folder:profile      ?Path to the folder containing server profile.
 	                                   By default, server logs are written to server profile folder. 
 	                                   Logs/dumps/etc will be created there, along with BattlEye/BEC/Rcon related files.
 	                                   Windows Environment variables are supported. E.g. &ampuserprofile&amp"
-	"B,battleye-path:path         --Sets a custom path to the Battleye files"
-	"script-define:define         --Specify to load a script preprocessor define.
+	"B,battleye-path:path          ?Sets a custom path to the Battleye files"
+	"script-define:define          ?Specify to load a script preprocessor define.
 	                                   Can be repeated to define more."
-	"ignore-new-errors            --Newly added game / script errors are treated as warning."
+	"ignore-new-errors             ?Newly added game / script errors are treated as warning."
 )
 _options=$(declare -p options)
 

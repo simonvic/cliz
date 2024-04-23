@@ -76,36 +76,36 @@ function setupExecutables() {
 }
 
 options=(
-	"h,help                         --Print this page and exit"
-	"v,verbose                      --Be verbose. Can be repeated for more verbosity"
-	"k,kill                         --Kill active processes before starting a new one"
-	"e,experimental                 --Use experimental executable"
-	"d,diagnostic                   --Use diagnostic executable"
-	"w,windowed                     --Runs the game in windowed mode"
-	"n,name:name                    --Selects a profile from profiles folder with the given name (also in-game name)"
-	"f,file-patching                --Ensures that only PBOs are loaded and NO unpacked data."
-	"B,buldozer                     --Starts the game in bulldozer mode."
-	"E,no-pause                     --Allows the game to run even when its window does not have focus."
-	"l,do-logs                      --Enables all log messages in the server RPT file."
-	"s,script-debug                 --Enable script debug"
-	"m,mods:mods                    --Loads the specified sub-folders for different mods.
+	"h,help                         ?Print this page and exit"
+	"v,verbose                      ?Be verbose. Can be repeated for more verbosity"
+	"k,kill                         ?Kill active processes before starting a new one"
+	"e,experimental                 ?Use experimental executable"
+	"d,diagnostic                   ?Use diagnostic executable"
+	"w,windowed                     ?Runs the game in windowed mode"
+	"n,name:name                    ?Selects a profile from profiles folder with the given name (also in-game name)"
+	"f,file-patching                ?Ensures that only PBOs are loaded and NO unpacked data."
+	"B,buldozer                     ?Starts the game in bulldozer mode."
+	"E,no-pause                     ?Allows the game to run even when its window does not have focus."
+	"l,do-logs                      ?Enables all log messages in the server RPT file."
+	"s,script-debug                 ?Enable script debug"
+	"m,mods:mods                    ?Loads the specified sub-folders for different mods.
 	                                    Separated by semi-colons.
 	                                    Absolute path and multiple stacked folders are possible."
-	"a,server-address:address:port  --Connects to this server with this IP address or domain name and port"
-	"p,server-password:password     --Uses this server passoword, if required"
-	"c,cpu-count:cores-number       --Sets the number of logical CPU cores to use for parallel tasks processing.
+	"a,server-address:address:port  ?Connects to this server with this IP address or domain name and port"
+	"p,server-password:password     ?Uses this server passoword, if required"
+	"c,cpu-count:cores-number       ?Sets the number of logical CPU cores to use for parallel tasks processing.
 	                                    It should be less or equal than the numbers of available cores."
-	"D,dir:exe-directory            --Selects where the executables are found"
-	"X,exe:exe-file                 --Selects what executable file to be used"
-	"M,mission:mission              --Selects what mission to use."
-	"P,profile-folder:profile       --Path to the folder containing server profile.
+	"D,dir:exe-directory            ?Selects where the executables are found"
+	"X,exe:exe-file                 ?Selects what executable file to be used"
+	"M,mission:mission              ?Selects what mission to use."
+	"P,profile-folder:profile       ?Path to the folder containing server profile.
 	                                    By default, server logs are written to server profile folder. 
 	                                    Logs/dumps/etc will be created there, along with BattlEye/BEC/Rcon related files.
 	                                    Windows Environment variables are supported. E.g. &ampuserprofile&amp"
-	"W,world:world                  --Selects a game world to be loaded by default"
-	"script-define:define           --Specify to load a script preprocessor define.
+	"W,world:world                  ?Selects a game world to be loaded by default"
+	"script-define:define           ?Specify to load a script preprocessor define.
 	                                    Can be repeated to define more."
-	"ignore-new-errors              --Newly added game / script errors are treated as warning."
+	"ignore-new-errors              ?Newly added game / script errors are treated as warning."
 )
 _options=$(declare -p options)
 
