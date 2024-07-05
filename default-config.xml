@@ -30,8 +30,14 @@
 
 	<!-- DayZ Tools -->
 	<tools>
-		<addonbuilder>C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\AddonBuilder\AddonBuilder.exe</addonbuilder>
-		<workbench>C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\Workbench\workbenchApp.exe</workbench>
+		<stable>
+			<addonbuilder>C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\AddonBuilder\AddonBuilder.exe</addonbuilder>
+			<workbench>C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin\Workbench\workbenchApp.exe</workbench>
+		</stable>
+		<experimental>
+			<addonbuilder>C:\Program Files (x86)\Steam\steamapps\common\DayZ Experimental Tools\Bin\AddonBuilder\AddonBuilder.exe</addonbuilder>
+			<workbench>C:\Program Files (x86)\Steam\steamapps\common\DayZ Experimental Tools\Bin\Workbench\workbenchApp.exe</workbench>
+		</experimental>
 	</tools>
 
 	<!-- Path to your private key -->
@@ -55,7 +61,7 @@
 			</deps>
 		</mod>
 
-		<!-- Loading/building a group, will loading/build all mods in bulk -->
+		<!-- Loading or building a group, will load or build all mods in bulk -->
 		<group id="myGroupOfMod">
 			<deps>
 				<!-- The ref is the ID of the mod -->

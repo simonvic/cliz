@@ -2,7 +2,7 @@
 
 source DayZLauncherUtil
 
-workbenchExe=$(queryCfg "/config/tools/workbench/text()")
+useExperimental=false
 mods=()
 
 verbosity=0
@@ -23,9 +23,9 @@ options=(
 	"m,mods:mods           ?Loads the specified sub-folders for different mods.
 	                           Separated by semi-colons.
 	                           Absolute path and multiple stacked folders are possible. "
-	"X,exe:exe-path        ?Select what executable file to use"
 	"script-define:define  ?Specify to load a script preprocessor define.
 	                           Can be repeated to define more"
+	"experimental          ?Use experimental version of the workbench"
 )
 _options=$(declare -p options)
 
@@ -49,7 +49,7 @@ function parseArgs() {
 			-h | --help) printUsage; exit 1 ;;
 			-v | --verbose) ((verbosity++)) ;;
 			-m | --mods) mods+=("$2"); shift ;;
-			-X | --exe) workbenchExe="$2"; shift ;;
+			--experimental) useExperimental=true ;;
 			--)
 				shift
 				break
@@ -65,6 +65,10 @@ function parseArgs() {
 ###############################################################################
 
 parseArgs "$@"
+
+[[ "$useExperimental" == true ]] \
+	&& workbenchExe=$(queryCfg "/config/tools/experimental/workbench/text()") \
+	|| workbenchExe=$(queryCfg "/config/tools/stable/workbench/text()")
 
 [[ $verbosity -ge 2 ]] && echo "cmd.exe" "/c" "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$(getFormattedModsArgs)"
 cmd.exe /c "START" "/D" "${workbenchExe%\\*}" ".\\${workbenchExe##*\\}" "$(getFormattedModsArgs)"

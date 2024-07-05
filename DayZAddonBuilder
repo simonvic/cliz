@@ -2,7 +2,7 @@
 
 source DayZLauncherUtil
 
-addonBuilderExe=$(queryCfg '/config/tools/addonbuilder/text()')
+useExperimental=false
 args=()
 srcDir=""
 destDir=""
@@ -129,6 +129,7 @@ options=(
 	"T,dayz-tools:folder       ?Specifies the path to DayZ Tools directory with other tools (Binarize, CfgConvert, Filebank, ...).
 	                               By default is the directory retrieved from Steam client."
 	"dry-run                   ?Simulate the buildign without actually doing anything"
+	"experimental              ?Use experimental version of DayZAddonBuilder"
 )
 _options=$(declare -p options)
 
@@ -175,6 +176,7 @@ function parseArgs() {
 			shift
 			;;
 		--dry-run) dryRun=true ;;
+		--experimental) useExperimental=true ;;
 		--)
 			shift
 			break
@@ -195,6 +197,10 @@ function parseArgs() {
 ###############################################################################
 parseArgs "$@"
 [[ "$dryRun" == true ]] && printf "%s\n" "> DRY RUN..."
+
+[[ "$useExperimental" == true ]] \
+	&& addonBuilderExe=$(queryCfg '/config/tools/experimental/addonbuilder/text()') \
+	|| addonBuilderExe=$(queryCfg '/config/tools/stable/addonbuilder/text()') \
 
 # Launch GUI
 if [ -z "$srcDir" ] && [ -z "$destDir" ] && [ "${#args[@]}" -eq 0 ]; then
