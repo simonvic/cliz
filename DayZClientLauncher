@@ -2,9 +2,6 @@
 
 source DayZLauncherUtil
 
-dir=$clientDir
-exe=$clientExe
-
 ##
 # 0 = no output
 # 1 = mod list | windows output
@@ -17,33 +14,12 @@ useDiag=false
 args=()
 mods=()
 
-
-
 ##
 #	Kill all Dayz related processes (exe and diagnostic exe)
 function killAllProcesses() {
 	printf "%s\n" "> KILLING PROCESSES"
 	killClient "$verbosity"
 	killClientDiag "$verbosity"
-}
-
-##
-#	Specify to use experimental executable
-function useExperimental() {
-	useExperimental=true
-}
-
-##
-#	Specify to use diagnostic executable
-function useDiag() {
-	useDiag=true
-}
-
-##
-#	Specify to use file patching (diagnostic exe will be used)
-function useFilePatching() {
-	useDiag
-	args+=("-filePatching")
 }
 
 ##
@@ -66,13 +42,6 @@ function printLaunchParameters() {
 			printf "\t\t%s\n" "$(printf "%s" "$mod" | sed 's/;/\n\t\t/g')"
 		done
 	fi
-}
-
-##
-#	Setup directory and executables based on the flag given
-function setupExecutables() {
-	[[ $useExperimental == true ]] && dir=$clientDirExp
-	[[ $useDiag == true ]] && exe=$clientExeDiag
 }
 
 options=(
@@ -129,9 +98,9 @@ function parseArgs() {
 		-h | --help)             printUsage; exit 1 ;;
 		-v | --verbose)          ((verbosity++))                 ;;
 		-k | --kill)             requestedKillProcess=true       ;;
-		-d | --diagnostic)       useDiag                         ;;
-		-e | --experimental)     useExperimental                 ;;
-		-f | --file-patching)    useFilePatching                 ;;
+		-d | --diagnostic)       useDiag=true                          ;;
+		-e | --experimental)     useExperimental=true                  ;;
+		-f | --file-patching)    useDiag=true; args+=("-filePatching") ;;
 		-s | --script-debug)     args+=("-scriptDebug=true")     ;;
 		-w | --windowed)         args+=("-window")               ;;
 		-l | --do-logs)          args+=("-doLogs")               ;;
@@ -172,7 +141,12 @@ function parseArgs() {
 
 ###############################################################################
 parseArgs "$@"
-setupExecutables
+[[ $useExperimental == true ]] \
+	&& dir=$clientDirExp \
+	|| dir=$clientDir
+[[ $useDiag == true ]] \
+	&& exe=$clientExeDiag \
+	|| exe=$clientExe
 [[ $requestedKillProcess == true ]] && killAllProcesses
 [[ $verbosity -ge 1 ]] && printLaunchParameters
 
