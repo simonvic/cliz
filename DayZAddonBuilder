@@ -128,7 +128,7 @@ options=(
 	"D,dssignfile-exe:exe      ?Path to cfg DssignFile  tool. Default is used if not specified."
 	"T,dayz-tools:folder       ?Specifies the path to DayZ Tools directory with other tools (Binarize, CfgConvert, Filebank, ...).
 	                               By default is the directory retrieved from Steam client."
-	"-dry-run                  ?Simulate the buildign without actually doing anything"
+	"dry-run                   ?Simulate the buildign without actually doing anything"
 )
 _options=$(declare -p options)
 
