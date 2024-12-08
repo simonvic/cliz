@@ -124,11 +124,11 @@ else
 	unset -v duplicate
 fi
 
-clientDir=$(queryCfg "/config/client/dir/text()")
-clientDirExp=$(queryCfg "/config/client/dir-exp/text()")
+clientDir=$(queryCfg "/config/client/stable/dir/text()")
+clientDirExp=$(queryCfg "/config/client/experimental/dir/text()")
 clientExe=$(queryCfg "/config/client/exe/text()")
 clientExeDiag=$(queryCfg "/config/client/exe-diag/text()")
-serverDir=$(queryCfg "/config/server/dir/text()")
-serverDirExp=$(queryCfg "/config/server/dir-exp/text()")
+serverDir=$(queryCfg "/config/server/stable/dir/text()")
+serverDirExp=$(queryCfg "/config/server/experimental/dir/text()")
 serverExe=$(queryCfg "/config/server/exe/text()")
 workshopDir=$(queryCfg '/config/workshop/dir/text()')

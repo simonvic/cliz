@@ -1,32 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
 	<client>
-		<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ</dir>
-		<dir-exp>C:\Program Files (x86)\Steam\steamapps\common\DayZ Exp</dir-exp>
 		<exe>DayZ_x64.exe</exe>
 		<exe-diag>DayZDiag_x64.exe</exe-diag>
-		<defaults>
-			<!-- Ingame player name -->
-			<profile-name></profile-name>
+		<stable>
+			<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ</dir>
+			<defaults>
+				<!-- Ingame player name -->
+				<profile-name></profile-name>
 
-			<!-- IP address to connect to when launching client -->
-			<connect>127.0.0.1:2302</connect>
-		</defaults>
+				<!-- IP address to connect to when launching client -->
+				<connect>127.0.0.1:2302</connect>
+			</defaults>
+		</stable>
+		<experimental>
+			<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ Exp</dir>
+			<defaults>
+				<!-- Ingame player name -->
+				<profile-name></profile-name>
+
+				<!-- IP address to connect to when launching client -->
+				<connect>127.0.0.1:2302</connect>
+			</defaults>
+		</experimental>
 	</client>
 
 	<server>
-		<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZServer</dir>
-		<dir-exp>C:\Program Files (x86)\Steam\steamapps\common\DayZ Server Exp</dir-exp>
 		<exe>DayZServer_x64.exe</exe>
-		<defaults>
-			<mission>C:\Program Files (x86)\Steam\steamapps\common\DayZServer\mpmissions\dayzOffline.chernarusplus</mission>
-			<profile>C:\Program Files (x86)\Steam\steamapps\common\DayZServer\profile_folder</profile>
-			<config>C:\Program Files (x86)\Steam\steamapps\common\DayZServer\serverDZ.cfg</config>
-		</defaults>
+		<stable>
+			<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZServer</dir>
+			<defaults>
+				<mission>C:\Program Files (x86)\Steam\steamapps\common\DayZServer\mpmissions\dayzOffline.chernarusplus</mission>
+				<profile>C:\Program Files (x86)\Steam\steamapps\common\DayZServer\profile_folder</profile>
+				<config>C:\Program Files (x86)\Steam\steamapps\common\DayZServer\serverDZ.cfg</config>
+			</defaults>
+		</stable>
+		<experimental>
+			<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ Server Exp</dir>
+			<defaults>
+				<mission>C:\Program Files (x86)\Steam\steamapps\common\DayZ Server Exp\mpmissions\dayzOffline.chernarusplus</mission>
+				<profile>C:\Program Files (x86)\Steam\steamapps\common\DayZ Server Exp\profile_folder</profile>
+				<config>C:\Program Files (x86)\Steam\steamapps\common\DayZ Server Exp\serverDZ.cfg</config>
+			</defaults>
+		</experimental>
 	</server>
 
-	<!-- Path to workshop folder -->
-	<workshop><dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ\!Workshop</dir></workshop>
+	<workshop>
+		<!-- Path to workshop folder -->
+		<dir>C:\Program Files (x86)\Steam\steamapps\common\DayZ\!Workshop</dir>
+	</workshop>
 
 	<!-- DayZ Tools -->
 	<tools>

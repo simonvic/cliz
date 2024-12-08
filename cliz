@@ -2,18 +2,13 @@
 
 source DayZLauncherUtil
 
-profileName=$(queryCfg '/config/client/defaults/profile-name/text()')
-serverAddress=$(queryCfg '/config/client/defaults/connect/text()')
-serverMission=$(queryCfg '/config/server/defaults/mission/text()')
-serverConfig=$(queryCfg '/config/server/defaults/config/text()')
-serverProfileFolder=$(queryCfg '/config/server/defaults/profile/text()')
-privateKey=$(queryCfg '/config/private-key/text()')
 
 verbosity=0
 verbosityArgs=()
 modsToBuild=()              # array of mods id to build
 modsToLaunch=()             # array of mods id to launch
 modsToLaunchServerSide=()   # array of mods id to be loaded server side
+experimental=false
 args=()
 serverArgs=()
 clientArgs=()
@@ -146,6 +141,16 @@ function killAllProcesses() {
 ##
 # Launch the server
 function launchServer() {
+	local serverMission serverConfig serverProfileFolder
+	if [[ $experimental == true ]]; then
+		serverMission=$(queryCfg '/config/server/experimental/defaults/mission/text()')
+		serverConfig=$(queryCfg '/config/server/experimental/defaults/config/text()')
+		serverProfileFolder=$(queryCfg '/config/server/experimental/defaults/profile/text()')
+	else
+		serverMission=$(queryCfg '/config/server/stable/defaults/mission/text()')
+		serverConfig=$(queryCfg '/config/server/stable/defaults/config/text()')
+		serverProfileFolder=$(queryCfg '/config/server/stable/defaults/profile/text()')
+	fi
 	DayZServerLauncher \
 		"${verbosityArgs[@]}" \
 		--do-logs \
@@ -168,6 +173,14 @@ function launchServer() {
 ##
 # Launch the client
 function launchClient() {
+	local profileName serverAddress
+	if [[ $experimental == true ]]; then
+		profileName=$(queryCfg '/config/client/experimental/defaults/profile-name/text()')
+		serverAddress=$(queryCfg '/config/client/experimental/defaults/connect/text()')
+	else
+		profileName=$(queryCfg '/config/client/stable/defaults/profile-name/text()')
+		serverAddress=$(queryCfg '/config/client/stable/defaults/connect/text()')
+	fi
 	DayZClientLauncher \
 		"${verbosityArgs[@]}" \
 		--do-logs \
@@ -183,6 +196,7 @@ function launchClient() {
 ##
 # Build specified mods
 function buildMods() {
+	local privateKey; privateKey=$(queryCfg '/config/private-key/text()')
 	for source in "${!modsToBuildResolved[@]}"; do
 		DayZAddonBuilder \
 			-vvv \
@@ -247,7 +261,7 @@ function parseArgs() {
 			-B | --build-and-launch)  addModToBuild "$2"; addModToLaunch "$2"; shift ;;
 			-f | --file-patching)     args+=("--file-patching") ;;
 			-d | --diagnostic)        args+=("--diagnostic") ;;
-			-e | --experimental)      args+=("--experimental") ;;
+			-e | --experimental)      experimental=true; args+=("--experimental") ;;
 			--ignore-new-errors)      args+=("--ignore-new-errors") ;;
 			--script-define)          args+=("--script-define=$2"); shift ;;
 			--dry-run)                dryRun=true ;;
